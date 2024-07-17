@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	
+  <PropertyGroup>
+    <TargetFrameworks>net7.0;net48</TargetFrameworks>
+    <Version>1.0</Version>
+    <Title>Plugin</Title>
+    <Description>Description of Plugin</Description>
+    <TargetExt>.gha</TargetExt>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+  </PropertyGroup>
+	
+  <ItemGroup>
+    <Compile Remove="Template\dist\**" />
+    <EmbeddedResource Remove="Template\dist\**" />
+    <None Remove="Template\dist\**" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Grasshopper" Version="6.35.21222.17001" IncludeAssets="compile;build" />
+    <PackageReference Include="Microsoft.ClearScript.osx-arm64" Version="7.4.5" />
+    <PackageReference Include="Microsoft.ClearScript.osx-x64" Version="7.4.5" />
+    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.4.5" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.4.5" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Update="Template\index.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Template\package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

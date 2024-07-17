@@ -1,0 +1,10 @@
+{
+  "name": "my-gh-component",
+  "version": "1.0.0",
+  "description": "A Javascript (or Typescript) component for Grasshopper",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npx path-exists-cli ./index.ts && npx esbuild ./index.ts --bundle --outdir=dist --platform=node --sourcemap=inline || npx esbuild ./index.js --bundle --outdir=dist --platform=node --sourcemap=inline",
+    "dev": "npx path-exists-cli ./index.ts && npx esbuild ./index.ts --bundle --outdir=dist --platform=node --sourcemap=inline --watch || npx esbuild ./index.js --bundle --outdir=dist --platform=node --sourcemap=inline --watch"
+  }
+}

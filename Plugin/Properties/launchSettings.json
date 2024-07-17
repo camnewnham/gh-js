@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Plugin": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\Rhino 8\\System\\Rhino.exe",
+      "commandLineArgs": "/runscript=\"_Grasshopper\" /nosplash"
+    }
+  }
+}
