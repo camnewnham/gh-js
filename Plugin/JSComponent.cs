@@ -1,10 +1,12 @@
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Microsoft.ClearScript;
+using Microsoft.ClearScript.JavaScript;
 using Microsoft.ClearScript.V8;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Plugin
@@ -46,16 +48,15 @@ namespace Plugin
             V8ScriptEngine engine;
             if (m_debugNext) // Note: This will hang until a debugger is attached. Use with care.
             {
-                engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableDebugging | V8ScriptEngineFlags.EnableRemoteDebugging | V8ScriptEngineFlags.AwaitDebuggerAndPauseOnStart, 9229);
+                engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableTaskPromiseConversion | V8ScriptEngineFlags.EnableDebugging | V8ScriptEngineFlags.EnableRemoteDebugging | V8ScriptEngineFlags.AwaitDebuggerAndPauseOnStart, 9229);
             }
             else
             {
-                engine = new V8ScriptEngine();
+                engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableTaskPromiseConversion);
             }
+            engine.DocumentSettings.AccessFlags |= DocumentAccessFlags.EnableFileLoading;
 
             engine.AddHostObject("console", Microsoft.ClearScript.HostItemFlags.GlobalMembers, new JavascriptConsoleOutput(this));
-
-            engine.DocumentSettings.AddSystemDocument("main", new StringDocument(new DocumentInfo(new Uri(path)), code));
 
             PropertyBag inputs = new PropertyBag()
             {
@@ -69,8 +70,18 @@ namespace Plugin
 
             try
             {
-                engine.ExecuteDocument("main");
+
+                object result = engine.Evaluate(new DocumentInfo(new Uri(path))
+                {
+                    Category = ModuleCategory.Standard,
+                }, code);
+
+                if (result is Task task)
+                {
+                    task.Wait();
+                }
                 DA.SetData(0, outputs["myOutput"]);
+
             }
             catch (ScriptEngineException codeEx)
             {

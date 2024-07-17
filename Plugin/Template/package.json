@@ -4,7 +4,7 @@
   "description": "A Javascript (or Typescript) component for Grasshopper",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npx path-exists-cli ./index.ts && npx esbuild ./index.ts --bundle --outdir=dist --platform=node --sourcemap=inline || npx esbuild ./index.js --bundle --outdir=dist --platform=node --sourcemap=inline",
-    "dev": "npx path-exists-cli ./index.ts && npx esbuild ./index.ts --bundle --outdir=dist --platform=node --sourcemap=inline --watch || npx esbuild ./index.js --bundle --outdir=dist --platform=node --sourcemap=inline --watch"
+    "build": "npx path-exists-cli ./index.ts && npx esbuild ./index.ts --outdir=dist --platform=node --format=esm --sourcemap=inline --bundle || npx esbuild ./index.js --outdir=dist --platform=node --format=esm --sourcemap=inline --bundle",
+    "dev": "npx path-exists-cli ./index.ts && npx esbuild ./index.ts --outdir=dist --platform=node --format=esm --sourcemap=inline --bundle --watch || npx esbuild ./index.js --outdir=dist --platform=node --format=esm --sourcemap=inline --bundle --watch"
   }
 }

@@ -1,3 +1,3 @@
-﻿console.info("Hi");
-
-outputs.myOutput = inputs.test * 2;
+﻿console.info("Hello world");
+outputs.myOutput = inputs.test;
+console.warn("It's ok");
