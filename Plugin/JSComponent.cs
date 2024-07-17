@@ -1,12 +1,15 @@
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Parameters;
 using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
 using System;
 using System.IO;
+using System.Reflection;
+using System.Windows.Forms;
 
 namespace Plugin
 {
-    public class JSComponent : GH_Component
+    public class JSComponent : GH_Component, IGH_VariableParameterComponent
     {
         public override GH_Exposure Exposure => GH_Exposure.primary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
@@ -19,39 +22,30 @@ namespace Plugin
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("File Path", "P", "The file path of the code.", GH_ParamAccess.item);
-            pManager.AddBooleanParameter("Debug", "D", "Enable debugging.", GH_ParamAccess.item, false);
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Result", "R", "Whatever was returned from the script", GH_ParamAccess.item);
         }
+        private bool m_debugNext = false;
+
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            string path = null;
-            if (!DA.GetData(0, ref path))
-            {
-                return;
-            }
+            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "..", "..", "..", "Template", "dist", "index.js");
 
             if (!File.Exists(path))
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "File not found.");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "File not found. Has the module been built yet?");
                 return;
             }
-
-            bool debug = false;
-            DA.GetData(1, ref debug);
-
 
             string code = File.ReadAllText(path);
 
             V8ScriptEngine engine;
-            if (debug)
+            if (m_debugNext) // Note: This will hang until a debugger is attached. Use with care.
             {
-                // Note: This will hang until a debugger is attached. Use with care.
                 engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableDebugging | V8ScriptEngineFlags.EnableRemoteDebugging | V8ScriptEngineFlags.AwaitDebuggerAndPauseOnStart, 9229);
             }
             else
@@ -59,17 +53,77 @@ namespace Plugin
                 engine = new V8ScriptEngine();
             }
 
+            engine.AddHostObject("console", Microsoft.ClearScript.HostItemFlags.GlobalMembers, new JavascriptConsoleOutput(this));
+
             engine.DocumentSettings.AddSystemDocument("main", new StringDocument(new DocumentInfo(new Uri(path)), code));
+
+            PropertyBag inputs = new PropertyBag()
+            {
+                { "test", 4 }
+            };
+
+            PropertyBag outputs = new PropertyBag();
+
+            engine.AddHostObject("inputs", inputs);
+            engine.AddHostObject("outputs", outputs);
 
             try
             {
-                object result = engine.EvaluateDocument("main");
-                DA.SetData("Result", result);
+                engine.ExecuteDocument("main");
+                DA.SetData(0, outputs["myOutput"]);
             }
             catch (ScriptEngineException codeEx)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "An error occurred while executing the javascript bundle. \n" + codeEx.ErrorDetails);
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, codeEx.ErrorDetails);
             }
+            finally
+            {
+                engine.Dispose();
+                m_debugNext = false;
+            }
+        }
+
+        protected override void AfterSolveInstance()
+        {
+            m_debugNext = false;
+        }
+
+        public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
+        {
+            base.AppendAdditionalMenuItems(menu);
+            Menu_AppendItem(menu, "Debug", (ev, arg) =>
+            {
+                if (Rhino.UI.Dialogs.ShowMessage("Debugging components requires that a debugger is running and waiting on port 9229. If no debugger is available, this component will hang until one is available. Are you sure you want to continue debugging?", "Debug Component", Rhino.UI.ShowMessageButton.YesNo, Rhino.UI.ShowMessageIcon.Warning) == Rhino.UI.ShowMessageResult.Yes)
+                {
+                    m_debugNext = true;
+                    ExpireSolution(true);
+                }
+            });
+        }
+
+        bool IGH_VariableParameterComponent.CanInsertParameter(GH_ParameterSide side, int index)
+        {
+            return true;
+        }
+
+        bool IGH_VariableParameterComponent.CanRemoveParameter(GH_ParameterSide side, int index)
+        {
+            return true;
+        }
+
+        IGH_Param IGH_VariableParameterComponent.CreateParameter(GH_ParameterSide side, int index)
+        {
+            return new Param_GenericObject();
+        }
+
+        bool IGH_VariableParameterComponent.DestroyParameter(GH_ParameterSide side, int index)
+        {
+            return true;
+        }
+
+        void IGH_VariableParameterComponent.VariableParameterMaintenance()
+        {
+
         }
     }
 }
