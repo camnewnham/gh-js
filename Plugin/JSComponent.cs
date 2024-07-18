@@ -1,12 +1,11 @@
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
-using Microsoft.ClearScript;
-using Microsoft.ClearScript.JavaScript;
-using Microsoft.ClearScript.V8;
+using Microsoft.JavaScript.NodeApi;
+using Microsoft.JavaScript.NodeApi.Runtime;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Plugin
@@ -30,68 +29,191 @@ namespace Plugin
         {
             pManager.AddGenericParameter("Result", "R", "Whatever was returned from the script", GH_ParamAccess.item);
         }
+
+        public static readonly string IndexPath = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "..", "..", "..", "Template", "dist", "index.js");
+
         private bool m_debugNext = false;
 
+        private static NodejsPlatform m_Node;
+        private static NodejsPlatform Node
+        {
+            get
+            {
+                if (m_Node == null)
+                {
+                    // TODO: Support macOS binary
+                    if (!Rhino.Runtime.HostUtils.RunningOnWindows)
+                    {
+                        throw new NotSupportedException("This platform is not supported.");
+                    }
+
+                    string path = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "native", "win64", "libnode.dll");
+                    m_Node = new NodejsPlatform(path);
+                }
+                return m_Node;
+            }
+        }
+
+        private NodejsEnvironment m_nodeEnvironment;
+
+        private NodejsEnvironment NodeEnvironment
+        {
+            get
+            {
+                if (m_nodeEnvironment == null)
+                {
+                    m_nodeEnvironment = Node.CreateEnvironment(Path.GetDirectoryName(Path.Combine(Path.GetDirectoryName(IndexPath), "..")));
+                    m_nodeEnvironment.Run(() =>
+                    {
+                        SetupConsole();
+                    });
+                }
+                return m_nodeEnvironment;
+            }
+        }
+
+        public override void AddedToDocument(GH_Document document)
+        {
+            base.AddedToDocument(document);
+            ClearEnvironment();
+            StartWatchFile();
+        }
+
+        public override void RemovedFromDocument(GH_Document document)
+        {
+            base.RemovedFromDocument(document);
+            ClearEnvironment();
+            StopWatchFile();
+        }
+
+        public override void MovedBetweenDocuments(GH_Document oldDocument, GH_Document newDocument)
+        {
+            base.MovedBetweenDocuments(oldDocument, newDocument);
+            ClearEnvironment();
+            StopWatchFile();
+        }
+
+        public void ClearEnvironment()
+        {
+            m_nodeEnvironment?.Dispose();
+            m_nodeEnvironment = null;
+        }
+
+        private FileSystemWatcher m_fileSystemWatcher;
+
+        private void StartWatchFile()
+        {
+            StopWatchFile();
+            if (File.Exists(IndexPath))
+            {
+                m_fileSystemWatcher = new FileSystemWatcher(Path.GetDirectoryName(IndexPath), Path.GetFileName(IndexPath))
+                {
+                    IncludeSubdirectories = false
+                };
+                m_fileSystemWatcher.Changed += OnFileChanged;
+                m_fileSystemWatcher.EnableRaisingEvents = true;
+            }
+        }
+
+        private void OnFileChanged(object sender, FileSystemEventArgs e)
+        {
+            Rhino.RhinoApp.InvokeOnUiThread((Action)(() =>
+            {
+                OnPingDocument().ScheduleSolution(5, (doc) =>
+                {
+                    ExpireSolution(false);
+                    ClearEnvironment();
+                });
+            }));
+        }
+
+        private void StopWatchFile()
+        {
+            m_fileSystemWatcher?.Dispose();
+            m_fileSystemWatcher = null;
+        }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            string path = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "..", "..", "..", "Template", "dist", "index.js");
-
-            if (!File.Exists(path))
+            if (!File.Exists(IndexPath))
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "File not found. Has the module been built yet?");
                 return;
             }
 
-            string code = File.ReadAllText(path);
+            string code = File.ReadAllText(IndexPath);
 
-            V8ScriptEngine engine;
-            if (m_debugNext) // Note: This will hang until a debugger is attached. Use with care.
+            if (m_debugNext)
             {
-                engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableTaskPromiseConversion | V8ScriptEngineFlags.EnableDebugging | V8ScriptEngineFlags.EnableRemoteDebugging | V8ScriptEngineFlags.AwaitDebuggerAndPauseOnStart, 9229);
+                NodeEnvironment.StartInspector(9229, null, true);
             }
-            else
+
+            ManualResetEventSlim mre = new ManualResetEventSlim(false);
+
+            NodeEnvironment.RunAsync(async () =>
             {
-                engine = new V8ScriptEngine(V8ScriptEngineFlags.EnableTaskPromiseConversion);
-            }
-            engine.DocumentSettings.AccessFlags |= DocumentAccessFlags.EnableFileLoading;
-
-            engine.AddHostObject("console", Microsoft.ClearScript.HostItemFlags.GlobalMembers, new JavascriptConsoleOutput(this));
-
-            PropertyBag inputs = new PropertyBag()
-            {
-                { "test", 4 }
-            };
-
-            PropertyBag outputs = new PropertyBag();
-
-            engine.AddHostObject("inputs", inputs);
-            engine.AddHostObject("outputs", outputs);
-
-            try
-            {
-
-                object result = engine.Evaluate(new DocumentInfo(new Uri(path))
+                try
                 {
-                    Category = ModuleCategory.Standard,
-                }, code);
+                    JSValue runScript = await NodeEnvironment.ImportAsync(IndexPath, "runScript", true);
 
-                if (result is Task task)
-                {
-                    task.Wait();
+                    JSValue inputs = JSValue.CreateObject();
+                    inputs.SetProperty("test", 4);
+
+                    JSValue result = runScript.Call(thisArg: default(JSValue), inputs);
+
+                    if (result.IsPromise())
+                    {
+                        result = await ((JSPromise)result).AsTask();
+                    }
+
+                    if (!result.IsObject() && Params.Output.Count > 0)
+                    {
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid return type. Expected an object with names matching component outputs.");
+                        return;
+                    }
+
+                    DA.SetData(0, result["square"].GetValueExternalOrPrimitive());
                 }
-                DA.SetData(0, outputs["myOutput"]);
+                finally
+                {
+                    mre.Set();
+                }
+            });
 
-            }
-            catch (ScriptEngineException codeEx)
+            mre.Wait();
+
+            if (m_debugNext)
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, codeEx.ErrorDetails);
-            }
-            finally
-            {
-                engine.Dispose();
                 m_debugNext = false;
+                NodeEnvironment.StopInspector();
             }
+        }
+
+        /// <summary>
+        /// Configures console.log functions in JS to redirect to component message bubbles.
+        /// </summary>
+        private void SetupConsole()
+        {
+            JSValue console = JSValue.CreateObject();
+
+            console.SetProperty("log", CreateLogFunction(GH_RuntimeMessageLevel.Remark));
+            console.SetProperty("info", CreateLogFunction(GH_RuntimeMessageLevel.Remark));
+            console.SetProperty("warn", CreateLogFunction(GH_RuntimeMessageLevel.Warning));
+            console.SetProperty("error", CreateLogFunction(GH_RuntimeMessageLevel.Error));
+
+            JSValue.Global.SetProperty("console", console);
+        }
+
+        private JSValue CreateLogFunction(GH_RuntimeMessageLevel errorLevel)
+        {
+            return JSValue.CreateFunction(null, (args) =>
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    AddRuntimeMessage(errorLevel, (string)args[i].CoerceToString());
+                }
+                return JSValue.Undefined;
+            });
         }
 
         protected override void AfterSolveInstance()
@@ -109,6 +231,12 @@ namespace Plugin
                     m_debugNext = true;
                     ExpireSolution(true);
                 }
+            });
+
+            Menu_AppendItem(menu, "Reload Environment", (ev, arg) =>
+            {
+                ClearEnvironment();
+                ExpireSolution(true);
             });
         }
 

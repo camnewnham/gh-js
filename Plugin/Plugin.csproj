@@ -22,10 +22,7 @@
   
   <ItemGroup>
     <PackageReference Include="Grasshopper" Version="6.35.21222.17001" IncludeAssets="compile;build" />
-    <PackageReference Include="Microsoft.ClearScript.osx-arm64" Version="7.4.5" />
-    <PackageReference Include="Microsoft.ClearScript.osx-x64" Version="7.4.5" />
-    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.4.5" />
-    <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.4.5" />
+    <PackageReference Include="Microsoft.JavaScript.NodeApi" Version="0.7.30" />
     <PackageReference Include="RhinoCommon" Version="6.35.21222.17001" />
   </ItemGroup>
   
@@ -35,6 +32,9 @@
   </ItemGroup>
   
   <ItemGroup>
+    <None Update="native\win64\libnode.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Template\index.ts">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
