@@ -174,6 +174,10 @@ namespace Plugin
 
                     DA.SetData(0, result["square"].GetValueExternalOrPrimitive());
                 }
+                catch (JSException jsex)
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "A javascript exception occurred: " + jsex.Message);
+                }
                 finally
                 {
                     mre.Set();
