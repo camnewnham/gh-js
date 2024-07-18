@@ -30,7 +30,7 @@ namespace Plugin
             pManager.AddGenericParameter("Result", "R", "Whatever was returned from the script", GH_ParamAccess.item);
         }
 
-        public static readonly string IndexPath = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "..", "..", "..", "Template", "dist", "index.js");
+        public static readonly string IndexPath = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "..", "..", "..", "Template", ".dist", "index.js");
 
         private bool m_debugNext = false;
 
@@ -226,17 +226,11 @@ namespace Plugin
             base.AppendAdditionalMenuItems(menu);
             Menu_AppendItem(menu, "Debug", (ev, arg) =>
             {
-                if (Rhino.UI.Dialogs.ShowMessage("Debugging components requires that a debugger is running and waiting on port 9229. If no debugger is available, this component will hang until one is available. Are you sure you want to continue debugging?", "Debug Component", Rhino.UI.ShowMessageButton.YesNo, Rhino.UI.ShowMessageIcon.Warning) == Rhino.UI.ShowMessageResult.Yes)
+                if (Rhino.UI.Dialogs.ShowMessage("Please start a debugger on port 9229. If no debugger is available, this component will hang until one is available. Are you sure you want to debug?", "Debug Component", Rhino.UI.ShowMessageButton.YesNo, Rhino.UI.ShowMessageIcon.Warning) == Rhino.UI.ShowMessageResult.Yes)
                 {
                     m_debugNext = true;
                     ExpireSolution(true);
                 }
-            });
-
-            Menu_AppendItem(menu, "Reload Environment", (ev, arg) =>
-            {
-                ClearEnvironment();
-                ExpireSolution(true);
             });
         }
 
