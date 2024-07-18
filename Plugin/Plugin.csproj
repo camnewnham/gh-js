@@ -35,6 +35,9 @@
     <None Update="native\win64\libnode.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Template\index.ts">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

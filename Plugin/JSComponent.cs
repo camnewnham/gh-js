@@ -1,8 +1,8 @@
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Microsoft.JavaScript.NodeApi;
-using Microsoft.JavaScript.NodeApi.Runtime;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -14,12 +14,21 @@ namespace Plugin
     {
         public override GH_Exposure Exposure => GH_Exposure.primary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
-        public JSComponent()
-          : base("Javascript Code", "Javascript",
-            "Write and/or execute javascript.",
-            "Maths", "Script")
+        public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript.", "Maths", "Script") { }
+
+        public readonly bool IsTypescript = false;
+        public JSComponent(bool typescript) : this()
         {
+            NickName = "TS";
+            IsTypescript = true;
         }
+
+        private static string[] m_keywords = new string[]
+        {
+            "javascript", "js", "typescript", "ts", "nodejs", "node", "script", "execute", "run", "code", "vs", "vsc"
+        };
+
+        public override IEnumerable<string> Keywords => m_keywords;
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
@@ -32,71 +41,22 @@ namespace Plugin
 
         public static readonly string IndexPath = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "..", "..", "..", "Template", ".dist", "index.js");
 
-        private bool m_debugNext = false;
-
-        private static NodejsPlatform m_Node;
-        private static NodejsPlatform Node
-        {
-            get
-            {
-                if (m_Node == null)
-                {
-                    // TODO: Support macOS binary
-                    if (!Rhino.Runtime.HostUtils.RunningOnWindows)
-                    {
-                        throw new NotSupportedException("This platform is not supported.");
-                    }
-
-                    string path = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "native", "win64", "libnode.dll");
-                    m_Node = new NodejsPlatform(path);
-                }
-                return m_Node;
-            }
-        }
-
-        private NodejsEnvironment m_nodeEnvironment;
-
-        private NodejsEnvironment NodeEnvironment
-        {
-            get
-            {
-                if (m_nodeEnvironment == null)
-                {
-                    m_nodeEnvironment = Node.CreateEnvironment(Path.GetDirectoryName(Path.Combine(Path.GetDirectoryName(IndexPath), "..")));
-                    m_nodeEnvironment.Run(() =>
-                    {
-                        SetupConsole();
-                    });
-                }
-                return m_nodeEnvironment;
-            }
-        }
-
         public override void AddedToDocument(GH_Document document)
         {
             base.AddedToDocument(document);
-            ClearEnvironment();
             StartWatchFile();
         }
 
         public override void RemovedFromDocument(GH_Document document)
         {
             base.RemovedFromDocument(document);
-            ClearEnvironment();
             StopWatchFile();
         }
 
         public override void MovedBetweenDocuments(GH_Document oldDocument, GH_Document newDocument)
         {
             base.MovedBetweenDocuments(oldDocument, newDocument);
-            ClearEnvironment();
             StopWatchFile();
-        }
-
-        public void ClearEnvironment()
-        {
-            m_nodeEnvironment?.Dispose();
-            m_nodeEnvironment = null;
         }
 
         private FileSystemWatcher m_fileSystemWatcher;
@@ -122,7 +82,7 @@ namespace Plugin
                 OnPingDocument().ScheduleSolution(5, (doc) =>
                 {
                     ExpireSolution(false);
-                    ClearEnvironment();
+                    Node.Reset();
                 });
             }));
         }
@@ -143,99 +103,54 @@ namespace Plugin
 
             string code = File.ReadAllText(IndexPath);
 
-            if (m_debugNext)
-            {
-                NodeEnvironment.StartInspector(9229, null, true);
-            }
-
             ManualResetEventSlim mre = new ManualResetEventSlim(false);
 
-            NodeEnvironment.RunAsync(async () =>
+            Node.Environment.RunAsync(async () =>
             {
-                try
+                using (new NodeConsole.ConsoleToRuntimeMessage(this))
                 {
-                    JSValue runScript = await NodeEnvironment.ImportAsync(IndexPath, "runScript", true);
-
-                    JSValue inputs = JSValue.CreateObject();
-                    inputs.SetProperty("test", 4);
-
-                    JSValue result = runScript.Call(thisArg: default(JSValue), inputs);
-
-                    if (result.IsPromise())
+                    try
                     {
-                        result = await ((JSPromise)result).AsTask();
-                    }
+                        JSValue runScript = await Node.Environment.ImportAsync(IndexPath, "runScript", true);
 
-                    if (!result.IsObject() && Params.Output.Count > 0)
+                        JSValue inputs = JSValue.CreateObject();
+                        inputs.SetProperty("test", 4);
+
+                        JSValue result = runScript.Call(thisArg: default, inputs);
+
+                        if (result.IsPromise())
+                        {
+                            result = await ((JSPromise)result).AsTask();
+                        }
+
+                        if (!result.IsObject() && Params.Output.Count > 0)
+                        {
+                            AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid return type. Expected an object with names matching component outputs.");
+                            return;
+                        }
+
+                        DA.SetData(0, result["square"].GetValueExternalOrPrimitive());
+                    }
+                    catch (JSException jsex)
                     {
-                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid return type. Expected an object with names matching component outputs.");
-                        return;
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "A javaScript exception occurred: " + jsex.Message);
                     }
-
-                    DA.SetData(0, result["square"].GetValueExternalOrPrimitive());
-                }
-                catch (JSException jsex)
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "A javascript exception occurred: " + jsex.Message);
-                }
-                finally
-                {
-                    mre.Set();
+                    finally
+                    {
+                        mre.Set();
+                    }
                 }
             });
 
             mre.Wait();
-
-            if (m_debugNext)
-            {
-                m_debugNext = false;
-                NodeEnvironment.StopInspector();
-            }
         }
-
-        /// <summary>
-        /// Configures console.log functions in JS to redirect to component message bubbles.
-        /// </summary>
-        private void SetupConsole()
-        {
-            JSValue console = JSValue.CreateObject();
-
-            console.SetProperty("log", CreateLogFunction(GH_RuntimeMessageLevel.Remark));
-            console.SetProperty("info", CreateLogFunction(GH_RuntimeMessageLevel.Remark));
-            console.SetProperty("warn", CreateLogFunction(GH_RuntimeMessageLevel.Warning));
-            console.SetProperty("error", CreateLogFunction(GH_RuntimeMessageLevel.Error));
-
-            JSValue.Global.SetProperty("console", console);
-        }
-
-        private JSValue CreateLogFunction(GH_RuntimeMessageLevel errorLevel)
-        {
-            return JSValue.CreateFunction(null, (args) =>
-            {
-                for (int i = 0; i < args.Length; i++)
-                {
-                    AddRuntimeMessage(errorLevel, (string)args[i].CoerceToString());
-                }
-                return JSValue.Undefined;
-            });
-        }
-
-        protected override void AfterSolveInstance()
-        {
-            m_debugNext = false;
-        }
-
         public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
         {
             base.AppendAdditionalMenuItems(menu);
-            Menu_AppendItem(menu, "Debug", (ev, arg) =>
+            Menu_AppendItem(menu, "Enable Debugger", (ev, arg) =>
             {
-                if (Rhino.UI.Dialogs.ShowMessage("Please start a debugger on port 9229. If no debugger is available, this component will hang until one is available. Are you sure you want to debug?", "Debug Component", Rhino.UI.ShowMessageButton.YesNo, Rhino.UI.ShowMessageIcon.Warning) == Rhino.UI.ShowMessageResult.Yes)
-                {
-                    m_debugNext = true;
-                    ExpireSolution(true);
-                }
-            });
+                Node.DebuggerEnabled = !Node.DebuggerEnabled;
+            }, true, Node.DebuggerEnabled);
         }
 
         bool IGH_VariableParameterComponent.CanInsertParameter(GH_ParameterSide side, int index)

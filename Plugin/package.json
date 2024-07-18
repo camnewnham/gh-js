@@ -1,0 +1,6 @@
+{
+  "name": "my-gh-component",
+  "version": "1.0.0",
+  "description": "A Javascript (or Typescript) component for Grasshopper",
+  "type": "module"
+}

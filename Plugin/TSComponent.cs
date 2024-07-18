@@ -1,0 +1,40 @@
+using Grasshopper.Kernel;
+using System;
+using System.Collections.Generic;
+
+namespace Plugin
+{
+    /// <summary>
+    /// Shim component to allow having two options in the menu for each scripting language.
+    /// On creation, this component just replaces itself with the correct one.
+    /// </summary>
+    public class TSComponent : GH_Component
+    {
+        public override GH_Exposure Exposure => GH_Exposure.primary;
+        public override Guid ComponentGuid => new Guid("A7887C6C-BC3D-45CD-90FA-609190F00DAA");
+
+        public TSComponent() : base("TypeScript", "TS", "Write and execute typescript.", "Maths", "Scripting") { }
+
+
+        private static string[] m_keywords = new string[]
+        {
+            "typescript", "ts", "javascript", "js", "nodejs", "node", "script", "execute", "run", "code", "vs", "vsc"
+        };
+
+        public override IEnumerable<string> Keywords => m_keywords;
+
+        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager) { }
+
+        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager) { }
+
+        protected override void SolveInstance(IGH_DataAccess DA) { }
+
+        public override void AddedToDocument(GH_Document document)
+        {
+            JSComponent jsComponent = new JSComponent(true);
+            document.AddObject(jsComponent, false);
+            jsComponent.Attributes.Pivot = Attributes.Pivot;
+            document.RemoveObject(this, false);
+        }
+    }
+}
