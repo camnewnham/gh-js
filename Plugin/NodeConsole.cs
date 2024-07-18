@@ -5,8 +5,21 @@ using System;
 
 namespace Plugin
 {
+    /// <summary>
+    /// Utilities for intercepting console.log and related functions to assist with diagnostics in Rhino and Grasshopper.
+    /// </summary>
     internal static class NodeConsole
     {
+        /// <summary>
+        /// Raised when a message is written to the console via the javascript console.log functions.
+        /// </summary>
+        public static event EventHandler<ConsoleEventArgs> OnMessage;
+
+        internal static void InvokeOnMessage(object sender, ConsoleEventArgs e)
+        {
+            OnMessage?.Invoke(sender, e);
+        }
+
         /// <summary>
         /// Configures console.log functions in JS to redirect to component message bubbles.
         /// </summary>
@@ -34,11 +47,14 @@ namespace Plugin
         {
             return JSValue.CreateFunction(null, (args) =>
             {
-                Node.InvokeOnMessage(null, new ConsoleEventArgs(messageLevel, args));
+                OnMessage?.Invoke(null, new ConsoleEventArgs(messageLevel, args));
                 return JSValue.Undefined;
             });
         }
 
+        /// <summary>
+        /// Wrapper for console.log events to be raised as GH runtime messages.
+        /// </summary>
         internal class ConsoleEventArgs : EventArgs
         {
             public readonly string[] Args;
@@ -64,7 +80,7 @@ namespace Plugin
             public ConsoleToRuntimeMessage(IGH_Component component)
             {
                 Component = component;
-                Node.OnMessage += OnMessage;
+                NodeConsole.OnMessage += OnMessage;
             }
 
             private void OnMessage(object sender, ConsoleEventArgs e)
@@ -74,7 +90,7 @@ namespace Plugin
 
             void IDisposable.Dispose()
             {
-                Node.OnMessage -= OnMessage;
+                NodeConsole.OnMessage -= OnMessage;
             }
         }
     }

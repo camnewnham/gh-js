@@ -31,10 +31,22 @@ namespace Plugin
 
         public override void AddedToDocument(GH_Document document)
         {
+            Grasshopper.Kernel.Undo.GH_UndoServer ds = document.UndoServer;
             JSComponent jsComponent = new JSComponent(true);
-            document.AddObject(jsComponent, false);
             jsComponent.Attributes.Pivot = Attributes.Pivot;
             document.RemoveObject(this, false);
+
+            document.AddObject(jsComponent, false);
+            document.UndoServer.PushUndoRecord(document.UndoUtil.CreateAddObjectEvent($"Swap {jsComponent.Name}", jsComponent));
+
+            // Repair the undo record
+            Grasshopper.Instances.DocumentEditor.BeginInvoke((Action)(() =>
+            {
+                if (document.UndoServer.FirstUndoName == $"Add {Name}")
+                {
+                    document.UndoServer.RemoveRecord(document.UndoServer.UndoGuids[0]);
+                }
+            }));
         }
     }
 }

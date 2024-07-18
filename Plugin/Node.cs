@@ -1,5 +1,6 @@
 ﻿using Microsoft.JavaScript.NodeApi.Runtime;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using static Plugin.NodeConsole;
@@ -8,14 +9,10 @@ namespace Plugin
 {
     internal static class Node
     {
+        /// <summary>
+        /// When <see cref="DebuggerEnabled"/> is true, the debugger will listen on this port for incoming connections.
+        /// </summary>
         public const int DEBUGGER_PORT = 9229;
-
-        public static event EventHandler<ConsoleEventArgs> OnMessage;
-
-        internal static void InvokeOnMessage(object sender, ConsoleEventArgs e)
-        {
-            OnMessage?.Invoke(sender, e);
-        }
 
         private static NodejsPlatform m_platform;
 
@@ -34,7 +31,7 @@ namespace Plugin
                         throw new NotSupportedException("This platform is not supported.");
                     }
 
-                    string path = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "native", "win64", "libnode.dll");
+                    string path = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location), "native", "win64", "libnode.dll");
                     m_platform = new NodejsPlatform(path);
                 }
                 return m_platform;
@@ -60,7 +57,7 @@ namespace Plugin
 
                     SetupConsole(m_environment);
 
-                    if (debuggerEnabled)
+                    if (m_debuggerEnabled)
                     {
                         m_environment.StartInspector(DEBUGGER_PORT);
                     }
@@ -78,27 +75,25 @@ namespace Plugin
             m_environment = null;
         }
 
-        /// <summary>
-        /// True if the debugger is enabled.
-        /// </summary>
-        private static bool debuggerEnabled = true;
+        private static bool m_debuggerEnabled = true;
 
         /// <summary>
         /// Enables or disables debugging for all JS components.
         /// </summary>
         public static bool DebuggerEnabled
         {
-            get => debuggerEnabled;
+            get => m_debuggerEnabled;
             set
             {
-                if (value != debuggerEnabled)
+                if (value != m_debuggerEnabled)
                 {
-                    debuggerEnabled = value;
-                    if (debuggerEnabled)
+                    m_debuggerEnabled = value;
+                    if (m_debuggerEnabled)
                     {
                         if (m_environment != null)
                         {
-                            m_environment.StartInspector(DEBUGGER_PORT);
+                            Uri uri = m_environment.StartInspector(DEBUGGER_PORT);
+                            Debug.WriteLine($"Debugger enabled: {uri}");
                         }
                     }
                     else
