@@ -114,6 +114,8 @@ namespace JavascriptForGrasshopper
                 writer.SetString("js_source_path", m_sourcePath);
             }
 
+            writer.SetBoolean("js_is_typescript", m_isTypeScript);
+
             return base.Write(writer);
         }
 
@@ -124,6 +126,7 @@ namespace JavascriptForGrasshopper
             m_jsBundleCode = reader.GetString("js_bundle_code");
             m_jsBundlePath = reader.GetString("js_bundle_path");
             m_sourceCodeZip = reader.GetByteArray("js_source_zip");
+            m_isTypeScript = reader.GetBoolean("js_is_typescript");
             reader.TryGetString("js_source_path", ref m_sourcePath);
             return base.Read(reader);
         }
@@ -256,7 +259,7 @@ namespace JavascriptForGrasshopper
                 m_sourcePath = Path.Combine(WorkingDir, "Source", "JSComponent-" + Guid.NewGuid().ToString());
                 CopyDirectoryRecursive(templateFolder, m_sourcePath, folder => !m_ignoreFolders.Contains(Path.GetFileName(folder)));
                 SetBundleToSourceDirectory();
-                ConfigureTemplate(m_sourcePath, m_createdWithTypescript);
+                ConfigureTemplate(m_sourcePath, m_isTypeScript);
                 m_isModifiedSinceLastWrite = true;
                 return m_sourcePath;
             }
@@ -279,6 +282,11 @@ namespace JavascriptForGrasshopper
             foreach (FileInfo file in di.GetFiles().Where(fi => delete_extensions.Contains(fi.Extension)))
             {
                 file.Delete();
+            }
+            if (isTypescript)
+            {
+                Directory.Delete(Path.Combine(sourcePath, "types"));
+                File.Delete(Path.Combine(sourcePath, "tsconfig.json"));
             }
         }
 

@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-	
+
   <PropertyGroup>
     <TargetFrameworks>net48</TargetFrameworks>
     <Version>1.0</Version>
@@ -11,18 +11,21 @@
     <RootNamespace>JavascriptForGrasshopper</RootNamespace>
 
   </PropertyGroup>
-	
+
+  <ItemGroup>
+    <Compile Remove="Template\dist\**" />
+    <EmbeddedResource Remove="Template\dist\**" />
+    <None Remove="Template\dist\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Remove="Template\index.d.ts" />
     <None Remove="Template\index.ts" />
     <None Remove="Template\package.json" />
   </ItemGroup>
-	
+
   <ItemGroup>
     <Content Include="Template\.vscode\launch.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Template\index.d.ts">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Template\index.ts">
@@ -32,30 +35,48 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Grasshopper" Version="6.35.21222.17001" IncludeAssets="compile;build" />
     <PackageReference Include="Microsoft.JavaScript.NodeApi" Version="0.7.30" />
     <PackageReference Include="RhinoCommon" Version="6.35.21222.17001" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <None Update="native\win64\libnode.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Template\tsconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Template\types\component.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+
   </ItemGroup>
 
   <Target Name="CreateJavascriptTemplate" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Creating initial dist of the index file." Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Template" Command="npm run build" />
+    <ItemGroup>
+      <FileWrites Include="$(OutDir)Template\dist\index.js" />
+    </ItemGroup>
   </Target>
-  
-  <Target Name="CreateTemplateDistribution" AfterTargets="CopyFilesToOutputDirectory">
-    <Exec WorkingDirectory="$(OutDir)Template" Command="npx -y tsc index.ts --target es2022 --module es2022 --esModuleInterop true --moduleResolution node --strict false" />
+
+  <Target Name="CreateTemplateDistribution" AfterTargets="CreateJavascriptTemplate">
+    <Message Text="Creating javascript template index.js." Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Template" Command="npx -y tsc --module es2022 --outdir ." />
+    <ItemGroup>
+      <FileWrites Include="$(OutDir)Template\index.js" />
+    </ItemGroup>
   </Target>
 
 </Project>

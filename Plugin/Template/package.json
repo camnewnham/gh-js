@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "npx -y path-exists-cli ./index.ts && npx -y esbuild ./index.ts --outdir=dist --platform=node --sourcemap=inline --bundle || npx -y esbuild ./index.js --outdir=dist --platform=node --sourcemap=inline --bundle",
-    "dev": "npx path-exists-cli -y ./index.ts && npx -y esbuild ./index.ts --outdir=dist --platform=node --sourcemap=inline --bundle --watch || npx -y esbuild ./index.js --outdir=dist --platform=node --sourcemap=inline --bundle --watch"
+    "build": "npx -y esbuild index.* --outdir=dist --platform=node --bundle --minify",
+    "dev": "npx -y esbuild index.* --outdir=dist --platform=node --sourcemap=inline --bundle --watch"
   }
 }

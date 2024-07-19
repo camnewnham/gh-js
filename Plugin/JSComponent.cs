@@ -15,11 +15,11 @@ namespace JavascriptForGrasshopper
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
         public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript.", "Maths", "Script") { }
 
-        public readonly bool m_createdWithTypescript = false;
+        private bool m_isTypeScript = false;
         public JSComponent(bool typescript) : this()
         {
             NickName = "TS";
-            m_createdWithTypescript = true;
+            m_isTypeScript = true;
         }
 
         private static string[] m_keywords = new string[]
