@@ -2,7 +2,7 @@ using Grasshopper.Kernel;
 using System;
 using System.Collections.Generic;
 
-namespace Plugin
+namespace JavascriptForGrasshopper
 {
     /// <summary>
     /// Shim component to allow having two options in the menu for each scripting language.

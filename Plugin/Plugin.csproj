@@ -7,17 +7,30 @@
     <Description>Description of Plugin</Description>
     <TargetExt>.gha</TargetExt>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AssemblyName>JavascriptForGrasshopper</AssemblyName>
+    <RootNamespace>JavascriptForGrasshopper</RootNamespace>
 
   </PropertyGroup>
 	
   <ItemGroup>
-    <Compile Remove="Template\dist\**" />
-    <EmbeddedResource Remove="Template\dist\**" />
-    <None Remove="Template\dist\**" />
+    <None Remove="Template\index.d.ts" />
+    <None Remove="Template\index.ts" />
+    <None Remove="Template\package.json" />
   </ItemGroup>
 	
   <ItemGroup>
-    <Content Include="Template\.vscode\launch.json" />
+    <Content Include="Template\.vscode\launch.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\index.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\index.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   
   <ItemGroup>
@@ -35,15 +48,14 @@
     <None Update="native\win64\libnode.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="package.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\index.ts">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\package.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
+
+  <Target Name="CreateJavascriptTemplate" AfterTargets="CopyFilesToOutputDirectory">
+    <Exec WorkingDirectory="$(OutDir)Template" Command="npm run build" />
+  </Target>
+  
+  <Target Name="CreateTemplateDistribution" AfterTargets="CopyFilesToOutputDirectory">
+    <Exec WorkingDirectory="$(OutDir)Template" Command="npx -y tsc index.ts --target es2022 --module es2022 --esModuleInterop true --moduleResolution node --strict false" />
+  </Target>
 
 </Project>

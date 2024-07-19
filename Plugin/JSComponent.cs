@@ -4,23 +4,22 @@ using Microsoft.JavaScript.NodeApi;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace Plugin
+namespace JavascriptForGrasshopper
 {
-    public class JSComponent : GH_Component, IGH_VariableParameterComponent
+    public partial class JSComponent : GH_Component, IGH_VariableParameterComponent
     {
         public override GH_Exposure Exposure => GH_Exposure.primary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
         public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript.", "Maths", "Script") { }
 
-        public readonly bool IsTypescript = false;
+        public readonly bool m_createdWithTypescript = false;
         public JSComponent(bool typescript) : this()
         {
             NickName = "TS";
-            IsTypescript = true;
+            m_createdWithTypescript = true;
         }
 
         private static string[] m_keywords = new string[]
@@ -29,6 +28,11 @@ namespace Plugin
         };
 
         public override IEnumerable<string> Keywords => m_keywords;
+
+        public override void CreateAttributes()
+        {
+            Attributes = new JSComponentAttributes(this);
+        }
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
@@ -39,69 +43,13 @@ namespace Plugin
             pManager.AddGenericParameter("Result", "R", "Whatever was returned from the script", GH_ParamAccess.item);
         }
 
-        public static readonly string IndexPath = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "..", "..", "..", "Template", ".dist", "index.js");
-
-        public override void AddedToDocument(GH_Document document)
-        {
-            base.AddedToDocument(document);
-            StartWatchFile();
-        }
-
-        public override void RemovedFromDocument(GH_Document document)
-        {
-            base.RemovedFromDocument(document);
-            StopWatchFile();
-        }
-
-        public override void MovedBetweenDocuments(GH_Document oldDocument, GH_Document newDocument)
-        {
-            base.MovedBetweenDocuments(oldDocument, newDocument);
-            StopWatchFile();
-        }
-
-        private FileSystemWatcher m_fileSystemWatcher;
-
-        private void StartWatchFile()
-        {
-            StopWatchFile();
-            if (File.Exists(IndexPath))
-            {
-                m_fileSystemWatcher = new FileSystemWatcher(Path.GetDirectoryName(IndexPath), Path.GetFileName(IndexPath))
-                {
-                    IncludeSubdirectories = false
-                };
-                m_fileSystemWatcher.Changed += OnFileChanged;
-                m_fileSystemWatcher.EnableRaisingEvents = true;
-            }
-        }
-
-        private void OnFileChanged(object sender, FileSystemEventArgs e)
-        {
-            Rhino.RhinoApp.InvokeOnUiThread((Action)(() =>
-            {
-                OnPingDocument().ScheduleSolution(5, (doc) =>
-                {
-                    ExpireSolution(false);
-                    Node.Reset();
-                });
-            }));
-        }
-
-        private void StopWatchFile()
-        {
-            m_fileSystemWatcher?.Dispose();
-            m_fileSystemWatcher = null;
-        }
-
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            if (!File.Exists(IndexPath))
+            if (!File.Exists(JSBundlePath))
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "File not found. Has the module been built yet?");
                 return;
             }
-
-            string code = File.ReadAllText(IndexPath);
 
             ManualResetEventSlim mre = new ManualResetEventSlim(false);
 
@@ -111,7 +59,7 @@ namespace Plugin
                 {
                     try
                     {
-                        JSValue runScript = await Node.Environment.ImportAsync(IndexPath, "runScript", true);
+                        JSValue runScript = await Node.Environment.ImportAsync(JSBundlePath, "runScript", true);
 
                         JSValue inputs = JSValue.CreateObject();
                         inputs.SetProperty("test", 4);
@@ -133,7 +81,7 @@ namespace Plugin
                     }
                     catch (JSException jsex)
                     {
-                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "A javaScript exception occurred: " + jsex.Message);
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "A JavaScript exception occurred: " + jsex.Message);
                     }
                     finally
                     {

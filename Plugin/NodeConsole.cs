@@ -3,7 +3,7 @@ using Microsoft.JavaScript.NodeApi;
 using Microsoft.JavaScript.NodeApi.Runtime;
 using System;
 
-namespace Plugin
+namespace JavascriptForGrasshopper
 {
     /// <summary>
     /// Utilities for intercepting console.log and related functions to assist with diagnostics in Rhino and Grasshopper.

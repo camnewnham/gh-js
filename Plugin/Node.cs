@@ -3,9 +3,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using static Plugin.NodeConsole;
+using static JavascriptForGrasshopper.NodeConsole;
 
-namespace Plugin
+namespace JavascriptForGrasshopper
 {
     internal static class Node
     {
@@ -13,6 +13,8 @@ namespace Plugin
         /// When <see cref="DebuggerEnabled"/> is true, the debugger will listen on this port for incoming connections.
         /// </summary>
         public const int DEBUGGER_PORT = 9229;
+
+        public static string EnvironmentRoot => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
 
         private static NodejsPlatform m_platform;
 
@@ -33,6 +35,14 @@ namespace Plugin
 
                     string path = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location), "native", "win64", "libnode.dll");
                     m_platform = new NodejsPlatform(path);
+
+                    // Create a package.json that specifies that node environments should use module mode
+                    string package = Path.Combine(EnvironmentRoot, "package.json");
+                    if (!File.Exists(package))
+                    {
+                        File.WriteAllText(package, $"{{\"type\":\"module\"}}");
+
+                    }
                 }
                 return m_platform;
             }
@@ -53,6 +63,7 @@ namespace Plugin
                 {
                     // Use the package.json in the plugin root folder.
                     string dir = Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
+
                     m_environment = Platform.CreateEnvironment(dir);
 
                     SetupConsole(m_environment);

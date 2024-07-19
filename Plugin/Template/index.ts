@@ -5,6 +5,6 @@ export async function runScript(inputs: { [key: string]: any }) {
   console.warn("Completed");
 
   return {
-    square: inputs.test * inputs.test * 2 * 2,
+    square: inputs.test * inputs.test * 2 * 2 * 2,
   };
 }
