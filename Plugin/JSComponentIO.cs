@@ -149,6 +149,7 @@ namespace JavascriptForGrasshopper
                     // Create a temporary bundle file to use for runtime execution
                     m_sourcePath = null;
                     m_jsBundlePath = Path.Combine(WorkingDir, "Cache", Guid.NewGuid().ToString(), "index.js");
+                    Directory.CreateDirectory(Path.GetDirectoryName(m_jsBundlePath));
                     File.WriteAllText(m_jsBundlePath, m_jsBundleCode);
                 }
             }
@@ -240,13 +241,11 @@ namespace JavascriptForGrasshopper
                 // Set up source code from cache
                 string tmpZipFile = Path.Combine(WorkingDir, "tmp_source_restore.zip");
                 Directory.CreateDirectory(Path.GetDirectoryName(tmpZipFile));
-                if (File.Exists(tmpZipFile))
-                {
-                    File.Delete(tmpZipFile);
-                }
+                File.WriteAllBytes(tmpZipFile, m_sourceCodeZip);
                 m_sourcePath = Path.Combine(WorkingDir, "Source", $"JSComponent-{Guid.NewGuid()}");
                 Directory.CreateDirectory(m_sourcePath);
                 ZipFile.ExtractToDirectory(tmpZipFile, m_sourcePath);
+                File.Delete(tmpZipFile);
                 SetBundleToSourceDirectory();
                 return m_sourcePath;
             }
@@ -281,8 +280,6 @@ namespace JavascriptForGrasshopper
             {
                 file.Delete();
             }
-
-            File.Delete(Path.Combine(sourcePath, "tsconfig.json"));
         }
 
         /// <summary>
