@@ -10,6 +10,8 @@
     <AssemblyName>JavascriptForGrasshopper</AssemblyName>
     <RootNamespace>JavascriptForGrasshopper</RootNamespace>
 
+    <LangVersion>9</LangVersion>
+
   </PropertyGroup>
 
   <ItemGroup>

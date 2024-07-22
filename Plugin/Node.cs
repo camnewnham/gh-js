@@ -3,7 +3,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using static JavascriptForGrasshopper.NodeConsole;
 
 namespace JavascriptForGrasshopper
 {
@@ -27,7 +26,7 @@ namespace JavascriptForGrasshopper
             {
                 if (m_platform == null)
                 {
-                    // TODO: Support macOS binary
+                    // TODO: Build, test & support macOS binary
                     if (!Rhino.Runtime.HostUtils.RunningOnWindows)
                     {
                         throw new NotSupportedException("This platform is not supported.");

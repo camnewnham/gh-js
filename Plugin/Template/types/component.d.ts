@@ -24,6 +24,6 @@ namespace Component {
     /**
      * The result of a + b
      */
-    sum: number;
+    x: number;
   }
 }

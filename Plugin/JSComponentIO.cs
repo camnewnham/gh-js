@@ -319,29 +319,34 @@ namespace JavascriptForGrasshopper
             }
             Debug.Assert(File.Exists(sourcePath), "No index file in source folder!");
 
-            // Attempt to launch visual studio code
-            Process launchCodeProcess = Process.Start(new ProcessStartInfo()
+            // Invoke on the next frame (for percieved performance)
+            Grasshopper.Instances.DocumentEditor.BeginInvoke((Action)(() =>
             {
-                CreateNoWindow = true,
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                FileName = "code",
-                Arguments = $"-r \"{sourceFolder}\" \"{sourcePath}\""
-            });
-
-            launchCodeProcess.WaitForExit();
-            if (launchCodeProcess.ExitCode != 0)
-            {
-                // If code fails to open, just browse to the folder.
-                Process.Start(new ProcessStartInfo()
+                Rhino.RhinoApp.Wait();
+                // Attempt to launch visual studio code
+                Process launchCodeProcess = Process.Start(new ProcessStartInfo()
                 {
                     CreateNoWindow = true,
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Hidden,
-                    FileName = Rhino.Runtime.HostUtils.RunningOnWindows ? "explorer" : "open",
-                    Arguments = $"\"{sourceFolder}\"",
+                    FileName = "code",
+                    Arguments = $"-r \"{sourceFolder}\" \"{sourcePath}\""
                 });
-            }
+
+                launchCodeProcess.WaitForExit();
+                if (launchCodeProcess.ExitCode != 0)
+                {
+                    // If code fails to open, just browse to the folder.
+                    Process.Start(new ProcessStartInfo()
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        FileName = Rhino.Runtime.HostUtils.RunningOnWindows ? "explorer" : "open",
+                        Arguments = $"\"{sourceFolder}\"",
+                    });
+                }
+            }));
         }
 
         /// <summary>
@@ -376,6 +381,17 @@ namespace JavascriptForGrasshopper
             }
         }
 
+        /// <summary>
+        /// Flags the type definitions for regeneration.
+        /// </summary>
+        public void ExpireTypeDefinitions()
+        {
+            UpdateTypeDefinitions();
+        }
+
+        /// <summary>
+        /// Updates the typescript definitions.
+        /// </summary>
         private void UpdateTypeDefinitions()
         {
             if (!m_isTypeScript)
@@ -393,8 +409,8 @@ namespace JavascriptForGrasshopper
             Directory.CreateDirectory(Path.GetDirectoryName(typesFile));
 
             string generated = new Templating.ComponentTypeGenerator(
-                Params.Input.Select(x => ParamToTypeDefinition(x)).ToArray(),
-                Params.Output.Select(x => ParamToTypeDefinition(x)).ToArray()
+                Params.Input.Cast<JSVariableParam>().Select(x => x.GetTypeDefinition()).ToArray(),
+                Params.Output.Cast<JSVariableParam>().Select(x => x.GetTypeDefinition()).ToArray()
                 ).TransformText();
 
             File.WriteAllText(typesFile, generated);
@@ -402,36 +418,5 @@ namespace JavascriptForGrasshopper
             m_isModifiedSinceLastWrite = true;
         }
 
-        private static Templating.TypeDefinition ParamToTypeDefinition(IGH_Param param)
-        {
-            return new Templating.TypeDefinition()
-            {
-                VariableName = ToCamelCase(param.NickName),
-                Name = param.NickName,
-                Description = param.Description,
-                Type = GetJSParamType(param)
-            };
-        }
-
-        private static string ToCamelCase(string s)
-        {
-            return string.Join("", s.Split(null).Select((word, index) =>
-            {
-                if (index == 0)
-                {
-                    return char.ToLower(word[0]) + word.Substring(1);
-                }
-                else
-                {
-                    return char.ToUpper(word[0]) + word.Substring(1);
-                }
-            }));
-        }
-
-        private static string GetJSParamType(IGH_Param param)
-        {
-            // TODO
-            return "string";
-        }
     }
 }

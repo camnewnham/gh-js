@@ -1,5 +1,4 @@
 using Grasshopper.Kernel;
-using Grasshopper.Kernel.Parameters;
 using Microsoft.JavaScript.NodeApi;
 using System;
 using System.Collections.Generic;
@@ -36,11 +35,14 @@ namespace JavascriptForGrasshopper
 
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
+            pManager.AddParameter(((IGH_VariableParameterComponent)this).CreateParameter(GH_ParameterSide.Input, Params.Input.Count));
+            pManager.AddParameter(((IGH_VariableParameterComponent)this).CreateParameter(GH_ParameterSide.Input, Params.Input.Count));
+
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Result", "R", "Whatever was returned from the script", GH_ParamAccess.item);
+            pManager.AddParameter(((IGH_VariableParameterComponent)this).CreateParameter(GH_ParameterSide.Output, Params.Output.Count));
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -61,23 +63,21 @@ namespace JavascriptForGrasshopper
                     {
                         JSValue runScript = await Node.Environment.ImportAsync(JSBundlePath, "runScript", true);
 
-                        JSValue inputs = JSValue.CreateObject();
-                        inputs.SetProperty("test", 4);
-
+                        JSValue inputs = GetInputParameters(DA);
                         JSValue result = runScript.Call(thisArg: default, inputs);
+
+                        if (!runScript.IsFunction())
+                        {
+                            AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Unable to find runScript method.");
+                            return;
+                        };
 
                         if (result.IsPromise())
                         {
                             result = await ((JSPromise)result).AsTask();
                         }
 
-                        if (!result.IsObject() && Params.Output.Count > 0)
-                        {
-                            AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid return type. Expected an object with names matching component outputs.");
-                            return;
-                        }
-
-                        DA.SetData(0, result["square"].GetValueExternalOrPrimitive());
+                        ProcessOutputParameters(DA, result);
                     }
                     catch (JSException jsex)
                     {
@@ -92,6 +92,71 @@ namespace JavascriptForGrasshopper
 
             mre.Wait();
         }
+
+        /// <summary>
+        /// Parses input params and marhsalls to JS
+        /// </summary>
+        /// <param name="DA">The data access</param>
+        /// <returns>The input parameters object</returns>
+        private JSValue GetInputParameters(IGH_DataAccess DA)
+        {
+            JSValue inputs = JSValue.CreateObject();
+
+            for (int i = 0; i < Params.Input.Count; i++)
+            {
+                JSVariableParam param = Params.Input[i] as JSVariableParam;
+                if (param.TryAccessData(DA, i, out JSValue value))
+                {
+                    inputs.SetProperty(param.VariableName, value);
+                }
+            }
+            return inputs;
+        }
+
+        /// <summary>
+        /// Parses the output data and marshalls to the DataAccess
+        /// </summary>
+        /// <param name="DA">The data access</param>
+        /// <param name="outputs">The output data</param>
+        private void ProcessOutputParameters(IGH_DataAccess DA, JSValue outputs)
+        {
+            if (!outputs.IsObject() && Params.Output.Count > 0)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Invalid return type. Expected an object with names matching component outputs.");
+                return;
+            }
+
+            for (int p = 0; p < Params.Output.Count; p++)
+            {
+                JSVariableParam param = Params.Output[p] as JSVariableParam;
+
+                JSValue obj = outputs[param.VariableName];
+
+                if (obj.IsUndefined())
+                {
+                    continue;
+                }
+                else if (obj.IsNull())
+                {
+                    DA.SetData(p, null);
+                }
+                else if (obj.IsArray())
+                {
+                    List<object> result = new List<object>();
+                    for (int i = 0; i < obj.GetArrayLength(); i++)
+                    {
+                        result.Add(obj[i].GetValueExternalOrPrimitive());
+                    }
+                    DA.SetDataList(p, result);
+                }
+                else
+                {
+                    object val = obj.GetValueExternalOrPrimitive();
+                    DA.SetData(p, val);
+                }
+            }
+        }
+
         public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
         {
             base.AppendAdditionalMenuItems(menu);
@@ -113,7 +178,7 @@ namespace JavascriptForGrasshopper
 
         IGH_Param IGH_VariableParameterComponent.CreateParameter(GH_ParameterSide side, int index)
         {
-            return new Param_GenericObject();
+            return JSVariableParam.Create(this, side, index);
         }
 
         bool IGH_VariableParameterComponent.DestroyParameter(GH_ParameterSide side, int index)
