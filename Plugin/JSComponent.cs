@@ -13,17 +13,17 @@ namespace JavascriptForGrasshopper
     {
         public override GH_Exposure Exposure => GH_Exposure.secondary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
-        protected override Bitmap Icon => m_isTypeScript ? Resources.logo_typescript : Resources.logo_javascript;
+        protected override Bitmap Icon => IsTypescript ? Resources.logo_typescript : Resources.logo_javascript;
         public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript with NodeJS.", "Maths", "Script") { }
 
-        private bool m_isTypeScript = false;
+        public bool IsTypescript { get; private set; } = false;
 
         public JSComponent(bool typescript) : this()
         {
             NickName = "TS";
             Name = "TypeScript";
             Description = Description.Replace("JavaScript", "TypeScript");
-            m_isTypeScript = true;
+            IsTypescript = true;
         }
 
         private static string[] m_keywords = new string[]

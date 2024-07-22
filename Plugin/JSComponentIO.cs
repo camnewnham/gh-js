@@ -114,7 +114,7 @@ namespace JavascriptForGrasshopper
                 writer.SetString("js_source_path", m_sourcePath);
             }
 
-            writer.SetBoolean("js_is_typescript", m_isTypeScript);
+            writer.SetBoolean("js_is_typescript", IsTypescript);
 
             return base.Write(writer);
         }
@@ -126,7 +126,7 @@ namespace JavascriptForGrasshopper
             m_jsBundleCode = reader.GetString("js_bundle_code");
             m_jsBundlePath = reader.GetString("js_bundle_path");
             m_sourceCodeZip = reader.GetByteArray("js_source_zip");
-            m_isTypeScript = reader.GetBoolean("js_is_typescript");
+            IsTypescript = reader.GetBoolean("js_is_typescript");
             reader.TryGetString("js_source_path", ref m_sourcePath);
             return base.Read(reader);
         }
@@ -261,7 +261,7 @@ namespace JavascriptForGrasshopper
                 m_sourcePath = Path.Combine(WorkingDir, "Source", "JSComponent-" + Guid.NewGuid().ToString());
                 CopyDirectoryRecursive(templateFolder, m_sourcePath, folder => !m_ignoreFolders.Contains(Path.GetFileName(folder)));
                 SetBundleToSourceDirectory();
-                ConfigureTemplate(m_sourcePath, m_isTypeScript);
+                ConfigureTemplate(m_sourcePath, IsTypescript);
                 UpdateTypeDefinitions();
                 m_isModifiedSinceLastWrite = true;
                 return m_sourcePath;
@@ -398,7 +398,7 @@ namespace JavascriptForGrasshopper
         /// </summary>
         private void UpdateTypeDefinitions()
         {
-            if (!m_isTypeScript)
+            if (!IsTypescript)
             {
                 return;
             }

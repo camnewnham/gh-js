@@ -10,7 +10,6 @@ namespace JavascriptForGrasshopper
 {
     public class JSVariableParam : Param_GenericObject
     {
-        public string JavascriptType => Access == GH_ParamAccess.item ? "any" : "any[]";
         public string VariableName => NickName;
         public string ToolTip => Description;
         public string PrettyName => Name ?? NickName;
@@ -38,13 +37,14 @@ namespace JavascriptForGrasshopper
 
         public Templating.TypeDefinition GetTypeDefinition()
         {
+            string tsType = TypeHint.ToString().ToLower() + (Access == GH_ParamAccess.item ? "" : "[]");
             return new Templating.TypeDefinition()
             {
                 VariableName = NickName,
                 Name = PrettyName,
                 Description = ToolTip,
-                Type = JavascriptType,
-                Optional = true
+                Type = tsType,
+                Optional = Optional
             };
         }
 
@@ -89,23 +89,81 @@ namespace JavascriptForGrasshopper
         {
             base.AppendMenuItems(menu);
 
-            Menu_AppendSeparator(menu);
 
             if (Kind == GH_ParamKind.input)
             {
+                Menu_AppendSeparator(menu);
+
                 Menu_AppendItem(menu, "Item Access", (obj, arg) =>
                 {
+                    if (Access == GH_ParamAccess.item)
+                    {
+                        return;
+                    }
+
                     Access = GH_ParamAccess.item;
                     Owner?.ExpireTypeDefinitions();
-                }, Access != GH_ParamAccess.item, Access == GH_ParamAccess.item);
+                }, true, Access == GH_ParamAccess.item);
 
                 Menu_AppendItem(menu, "List Access", (obj, arg) =>
                 {
+                    if (Access == GH_ParamAccess.list)
+                    {
+                        return;
+                    }
+
                     Access = GH_ParamAccess.list;
                     Owner?.ExpireTypeDefinitions();
-                }, Access != GH_ParamAccess.list, Access == GH_ParamAccess.list);
+                }, true, Access == GH_ParamAccess.list);
             }
+
+            if (Owner?.IsTypescript ?? false)
+            {
+                Menu_AppendSeparator(menu);
+
+                Menu_AppendItem(menu, "Optional", (obj, arg) =>
+                {
+                    Optional = !Optional;
+                    Owner?.ExpireTypeDefinitions();
+                }, true, Optional);
+
+                ToolStripMenuItem typeHintMenu = Menu_AppendItem(menu, "Type Hint");
+
+                foreach (JSTypeHint hint in Enum.GetValues(typeof(JSTypeHint)))
+                {
+                    ToolStripMenuItem item = new ToolStripMenuItem(hint.ToString().ToLower())
+                    {
+                        Tag = hint,
+                        Checked = TypeHint == hint,
+                    };
+                    item.Click += (obj, arg) =>
+                    {
+                        if (TypeHint == hint)
+                        {
+                            return;
+                        }
+
+                        TypeHint = (JSTypeHint)(obj as ToolStripMenuItem).Tag;
+                        Owner?.ExpireTypeDefinitions();
+                    };
+                    typeHintMenu.DropDownItems.Add(item);
+                }
+            }
+
             return true;
+        }
+
+        /// <summary>
+        /// Provides a type hint for TypeScript
+        /// </summary>
+        public JSTypeHint TypeHint { get; private set; } = JSTypeHint.Any;
+
+        public enum JSTypeHint
+        {
+            Any,
+            Number,
+            String,
+            Boolean
         }
     }
 }
