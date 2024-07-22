@@ -235,6 +235,7 @@ namespace JavascriptForGrasshopper
             {
                 // We already have the source directory and it exists. Prioritize using the dist in the source directory.
                 SetBundleToSourceDirectory();
+                UpdateTypeDefinitions();
                 // It may have changed while we were not monitoring the component, so flag it for re-serialization.
                 m_isModifiedSinceLastWrite = true;
                 return m_sourcePath;
@@ -250,6 +251,7 @@ namespace JavascriptForGrasshopper
                 ZipFile.ExtractToDirectory(tmpZipFile, m_sourcePath);
                 File.Delete(tmpZipFile);
                 SetBundleToSourceDirectory();
+                UpdateTypeDefinitions();
                 return m_sourcePath;
             }
             else if (!m_hasDeserialized)
@@ -260,6 +262,7 @@ namespace JavascriptForGrasshopper
                 CopyDirectoryRecursive(templateFolder, m_sourcePath, folder => !m_ignoreFolders.Contains(Path.GetFileName(folder)));
                 SetBundleToSourceDirectory();
                 ConfigureTemplate(m_sourcePath, m_isTypeScript);
+                UpdateTypeDefinitions();
                 m_isModifiedSinceLastWrite = true;
                 return m_sourcePath;
             }
@@ -283,9 +286,9 @@ namespace JavascriptForGrasshopper
             {
                 file.Delete();
             }
-            if (isTypescript)
+            if (!isTypescript)
             {
-                Directory.Delete(Path.Combine(sourcePath, "types"));
+                Directory.Delete(Path.Combine(sourcePath, "types"), true);
                 File.Delete(Path.Combine(sourcePath, "tsconfig.json"));
             }
         }
@@ -371,6 +374,64 @@ namespace JavascriptForGrasshopper
                 string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
                 CopyDirectoryRecursive(subDir.FullName, newDestinationDir, folderNameFilter);
             }
+        }
+
+        private void UpdateTypeDefinitions()
+        {
+            if (!m_isTypeScript)
+            {
+                return;
+            }
+
+            string typesFile = Path.Combine(m_sourcePath, "types", "component.d.ts");
+
+            if (!Directory.Exists(m_sourcePath))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(typesFile));
+
+            string generated = new Templating.ComponentTypeGenerator(
+                Params.Input.Select(x => ParamToTypeDefinition(x)).ToArray(),
+                Params.Output.Select(x => ParamToTypeDefinition(x)).ToArray()
+                ).TransformText();
+
+            File.WriteAllText(typesFile, generated);
+
+            m_isModifiedSinceLastWrite = true;
+        }
+
+        private static Templating.TypeDefinition ParamToTypeDefinition(IGH_Param param)
+        {
+            return new Templating.TypeDefinition()
+            {
+                VariableName = ToCamelCase(param.NickName),
+                Name = param.NickName,
+                Description = param.Description,
+                Type = GetJSParamType(param)
+            };
+        }
+
+        private static string ToCamelCase(string s)
+        {
+            return string.Join("", s.Split(null).Select((word, index) =>
+            {
+                if (index == 0)
+                {
+                    return char.ToLower(word[0]) + word.Substring(1);
+                }
+                else
+                {
+                    return char.ToUpper(word[0]) + word.Substring(1);
+                }
+            }));
+        }
+
+        private static string GetJSParamType(IGH_Param param)
+        {
+            // TODO
+            return "string";
         }
     }
 }

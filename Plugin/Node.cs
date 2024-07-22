@@ -66,7 +66,7 @@ namespace JavascriptForGrasshopper
 
                     m_environment = Platform.CreateEnvironment(dir);
 
-                    SetupConsole(m_environment);
+                    NodeConsole.SetupConsole(m_environment);
 
                     if (m_debuggerEnabled)
                     {

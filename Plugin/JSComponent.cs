@@ -123,7 +123,7 @@ namespace JavascriptForGrasshopper
 
         void IGH_VariableParameterComponent.VariableParameterMaintenance()
         {
-
+            UpdateTypeDefinitions();
         }
     }
 }

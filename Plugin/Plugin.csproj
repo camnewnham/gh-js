@@ -22,16 +22,20 @@
     <None Remove="Template\index.d.ts" />
     <None Remove="Template\index.ts" />
     <None Remove="Template\package.json" />
+    <None Remove="Template\tsconfig.json" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Template\.vscode\launch.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </Content> 
     <Content Include="Template\index.ts">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Template\package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Template\tsconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -39,7 +43,7 @@
   <ItemGroup>
     <PackageReference Include="Grasshopper" Version="6.35.21222.17001" IncludeAssets="compile;build" />
     <PackageReference Include="Microsoft.JavaScript.NodeApi" Version="0.7.30" />
-    <PackageReference Include="RhinoCommon" Version="6.35.21222.17001" />
+    <PackageReference Include="RhinoCommon" Version="8.10.24198.10001-rc" />
   </ItemGroup>
 
   <ItemGroup>
@@ -51,19 +55,40 @@
     <None Update="native\win64\libnode.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Template\tsconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="Template\types\component.d.ts">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templating\ComponentTypeGenerator.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>ComponentTypeGenerator.cs</LastGenOutput>
     </None>
   </ItemGroup>
 
   <ItemGroup>
-
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
 
-  <Target Name="CreateJavascriptTemplate" AfterTargets="CopyFilesToOutputDirectory">
+  <ItemGroup>
+    <Compile Update="Templating\ComponentTypeGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ComponentTypeGenerator.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Template\types\" />
+  </ItemGroup>
+
+  <!-- Remove generated files before building new ones -->
+  <Target Name="CleanTemplate" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Cleaning template folder" Importance="high" />
+    <RemoveDir Directories="$(OutDir)Template\dist" />
+    <Delete Files="$(OutDir)Template\index.js" />
+  </Target>
+
+  <!-- Create an initial dist file so the component can run initially -->
+  <Target Name="CreateJavascriptTemplate" AfterTargets="CleanTemplate">
     <Message Text="Creating initial dist of the index file." Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Template" Command="npm run build" />
     <ItemGroup>
@@ -71,6 +96,7 @@
     </ItemGroup>
   </Target>
 
+  <!-- Generate a javascript template file from the typescript file -->
   <Target Name="CreateTemplateDistribution" AfterTargets="CreateJavascriptTemplate">
     <Message Text="Creating javascript template index.js." Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Template" Command="npx -y tsc --module es2022 --outdir ." />

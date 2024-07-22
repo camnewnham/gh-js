@@ -1,0 +1,24 @@
+﻿namespace JavascriptForGrasshopper.Templating
+{
+    public struct TypeDefinition
+    {
+        public string Type;
+        public string Name;
+        public string VariableName;
+        public string Description;
+
+        public string Definition => $"{VariableName}: {Type};";
+    }
+
+    public partial class ComponentTypeGenerator
+    {
+        public readonly TypeDefinition[] Inputs;
+        public readonly TypeDefinition[] Outputs;
+
+        public ComponentTypeGenerator(TypeDefinition[] inputs, TypeDefinition[] outputs)
+        {
+            Inputs = inputs;
+            Outputs = outputs;
+        }
+    }
+}
