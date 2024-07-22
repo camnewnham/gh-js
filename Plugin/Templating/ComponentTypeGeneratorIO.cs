@@ -6,6 +6,7 @@
         public string Name;
         public string VariableName;
         public string Description;
+        public bool Optional;
 
         public string Definition => $"{VariableName}: {Type};";
     }

@@ -62,6 +62,12 @@ namespace JavascriptForGrasshopper.Templating
             
             #line default
             #line hidden
+            
+            #line 27 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(def.Optional ? "?" : ""));
+            
+            #line default
+            #line hidden
             this.Write(": ");
             
             #line 27 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
@@ -108,6 +114,12 @@ namespace JavascriptForGrasshopper.Templating
             
             #line 46 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.VariableName));
+            
+            #line default
+            #line hidden
+            
+            #line 46 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(def.Optional ? "?" : ""));
             
             #line default
             #line hidden

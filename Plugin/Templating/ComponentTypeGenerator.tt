@@ -24,7 +24,7 @@ namespace Component
      * @name <#= def.Name #>
      * @description <#= def.Description #>
      */
-    <#= def.VariableName #>: <#= def.Type #>; 
+    <#= def.VariableName #><#=def.Optional ? "?" : ""#>: <#= def.Type #>; 
 <#
   }
 #>
@@ -43,7 +43,7 @@ namespace Component
      * @name <#= def.Name #>
      * @description <#= def.Description #>
      */
-    <#= def.VariableName #>: <#= def.Type #>; 
+    <#= def.VariableName #><#=def.Optional ? "?" : ""#>: <#= def.Type #>; 
 <#
   }
 #>
