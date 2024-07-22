@@ -136,7 +136,7 @@ namespace JavascriptForGrasshopper
             base.AddedToDocument(document);
             if (!m_hasDeserialized)
             {
-                LaunchCodeEditor();
+                GetOrCreateSourceCode();
             }
             else
             {
@@ -319,10 +319,9 @@ namespace JavascriptForGrasshopper
             }
             Debug.Assert(File.Exists(sourcePath), "No index file in source folder!");
 
-            // Invoke on the next frame (for percieved performance)
-            Grasshopper.Instances.DocumentEditor.BeginInvoke((Action)(() =>
+            bool launchedEditor = false;
+            try
             {
-                Rhino.RhinoApp.Wait();
                 // Attempt to launch visual studio code
                 Process launchCodeProcess = Process.Start(new ProcessStartInfo()
                 {
@@ -332,21 +331,26 @@ namespace JavascriptForGrasshopper
                     FileName = "code",
                     Arguments = $"-r \"{sourceFolder}\" \"{sourcePath}\""
                 });
-
                 launchCodeProcess.WaitForExit();
-                if (launchCodeProcess.ExitCode != 0)
+                launchedEditor = launchCodeProcess.ExitCode == 0;
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine("Failed to launch code editor due to exception: " + e.Message);
+            }
+
+            if (!launchedEditor)
+            {
+                // If code fails to open, just browse to the folder.
+                Process.Start(new ProcessStartInfo()
                 {
-                    // If code fails to open, just browse to the folder.
-                    Process.Start(new ProcessStartInfo()
-                    {
-                        CreateNoWindow = true,
-                        UseShellExecute = true,
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                        FileName = Rhino.Runtime.HostUtils.RunningOnWindows ? "explorer" : "open",
-                        Arguments = $"\"{sourceFolder}\"",
-                    });
-                }
-            }));
+                    CreateNoWindow = true,
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Normal,
+                    FileName = Rhino.Runtime.HostUtils.RunningOnWindows ? "explorer" : "open",
+                    Arguments = $"\"{sourceFolder}\"",
+                });
+            }
         }
 
         /// <summary>

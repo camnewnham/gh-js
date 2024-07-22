@@ -2,6 +2,7 @@ using Grasshopper.Kernel;
 using Microsoft.JavaScript.NodeApi;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
@@ -10,14 +11,18 @@ namespace JavascriptForGrasshopper
 {
     public partial class JSComponent : GH_Component, IGH_VariableParameterComponent
     {
-        public override GH_Exposure Exposure => GH_Exposure.primary;
+        public override GH_Exposure Exposure => GH_Exposure.secondary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
-        public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript.", "Maths", "Script") { }
+        protected override Bitmap Icon => m_isTypeScript ? Resources.logo_typescript : Resources.logo_javascript;
+        public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript with NodeJS.", "Maths", "Script") { }
 
         private bool m_isTypeScript = false;
+
         public JSComponent(bool typescript) : this()
         {
             NickName = "TS";
+            Name = "TypeScript";
+            Description = Description.Replace("JavaScript", "TypeScript");
             m_isTypeScript = true;
         }
 

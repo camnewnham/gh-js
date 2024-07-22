@@ -1,6 +1,7 @@
 using Grasshopper.Kernel;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 
 namespace JavascriptForGrasshopper
 {
@@ -10,10 +11,12 @@ namespace JavascriptForGrasshopper
     /// </summary>
     public class TSComponent : GH_Component
     {
-        public override GH_Exposure Exposure => GH_Exposure.primary;
+        public override GH_Exposure Exposure => GH_Exposure.secondary;
         public override Guid ComponentGuid => new Guid("A7887C6C-BC3D-45CD-90FA-609190F00DAA");
 
-        public TSComponent() : base("TypeScript", "TS", "Write and execute typescript.", "Maths", "Scripting") { }
+        protected override Bitmap Icon => Resources.logo_typescript;
+
+        public TSComponent() : base("TypeScript", "TS", "Write and execute typescript with NodeJS.", "Maths", "Script") { }
 
 
         private static string[] m_keywords = new string[]
