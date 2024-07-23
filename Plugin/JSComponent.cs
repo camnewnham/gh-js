@@ -64,22 +64,31 @@ namespace JavascriptForGrasshopper
         private void AddOutParam()
         {
             Debug.Assert(UseOutputParam == true, $"Can not add output parameter when {nameof(UseOutputParam)} is false.");
-            Params.Output.Insert(0, new Param_String()
+            Params.RegisterOutputParam(new Param_String()
             {
                 Name = "Outout",
                 NickName = "out",
                 Description = "Output from console.log() and related commands. \"info\", \"warn\" and \"error\" are also output through the message balloon.",
                 Access = GH_ParamAccess.list
-            });
+            }, 0);
+            Params.OnParametersChanged();
         }
+
+        /// <summary>
+        /// Removes the "out" parameter for console.log messages
+        /// </summary>
+        private void RemoveOutParam()
+        {
+            Debug.Assert(UseOutputParam == false, $"Can not remove output parameter when {nameof(UseOutputParam)} is false.");
+            Params.UnregisterOutputParameter(Params.Output[0]);
+            Params.OnParametersChanged();
+        }
+
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            if (!File.Exists(JSBundlePath))
-            {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "File not found. Has the module been built yet?");
-                return;
-            }
+            Debug.Assert(JSBundlePath != null, "Bundle path was not set");
+            Debug.Assert(File.Exists(JSBundlePath), "Bundle file not found.");
 
             ManualResetEventSlim mre = new ManualResetEventSlim(false);
 
@@ -184,7 +193,7 @@ namespace JavascriptForGrasshopper
 
                 if (obj.IsUndefined())
                 {
-                    continue;
+                    DA.SetDataList(p, new List<object>());
                 }
                 else if (obj.IsNull())
                 {
@@ -221,16 +230,15 @@ namespace JavascriptForGrasshopper
                 UseOutputParam = !UseOutputParam;
                 if (!UseOutputParam)
                 {
-                    Params.Output.RemoveAt(0);
-                    Attributes.ExpireLayout();
-                    Instances.RedrawCanvas();
+                    RemoveOutParam();
                 }
                 else
                 {
                     AddOutParam();
-                    Attributes.ExpireLayout();
-                    Instances.RedrawCanvas();
                 }
+                Attributes.ExpireLayout();
+                Instances.RedrawCanvas();
+
             }, true, UseOutputParam);
 
 

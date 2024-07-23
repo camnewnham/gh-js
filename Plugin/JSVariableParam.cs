@@ -14,7 +14,13 @@ namespace JavascriptForGrasshopper
         public string ToolTip => Description;
         public string PrettyName => Name ?? NickName;
 
+        public override GH_Exposure Exposure => GH_Exposure.hidden;
+
+        public override Guid ComponentGuid => new Guid("{ED4AA333-216C-4AE5-BCAC-43CD4FC152B7}");
+
         public JSComponent Owner => (Attributes.Parent as JSComponentAttributes).Owner as JSComponent;
+
+        public JSVariableParam() : base() { }
 
         public JSVariableParam(string name, string nickname, string description) : base()
         {
@@ -119,16 +125,18 @@ namespace JavascriptForGrasshopper
                 }, true, Access == GH_ParamAccess.list);
             }
 
+            Menu_AppendSeparator(menu);
+
+            Menu_AppendItem(menu, "Optional", (obj, arg) =>
+            {
+                Optional = !Optional;
+                Owner?.ExpireTypeDefinitions();
+                ExpireSolution(true);
+            }, true, Optional);
+
+
             if (Owner?.IsTypescript ?? false)
             {
-                Menu_AppendSeparator(menu);
-
-                Menu_AppendItem(menu, "Optional", (obj, arg) =>
-                {
-                    Optional = !Optional;
-                    Owner?.ExpireTypeDefinitions();
-                }, true, Optional);
-
                 ToolStripMenuItem typeHintMenu = Menu_AppendItem(menu, "Type Hint");
 
                 foreach (JSTypeHint hint in Enum.GetValues(typeof(JSTypeHint)))

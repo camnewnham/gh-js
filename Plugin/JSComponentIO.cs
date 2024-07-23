@@ -14,7 +14,12 @@ namespace JavascriptForGrasshopper
         /// <summary>
         /// Where source code and bundle files should be stored for execution.
         /// </summary>
-        private static string WorkingDir => Path.Combine(Path.GetTempPath(), "GrasshopperJavascript");
+        private static readonly string WorkingDir = Path.Combine(Path.GetTempPath(), "GrasshopperJavascript");
+
+        /// <summary>
+        /// The folder where the template project is located.
+        /// </summary>
+        private static readonly string TemplateFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "Template");
 
         /// <summary>
         /// If true, <see cref="Read(GH_IReader)"/> has been called and this component exists.  
@@ -32,32 +37,76 @@ namespace JavascriptForGrasshopper
         };
 
         /// <summary>
-        /// The path to the javascript bundle ready for execution in <see cref="SolveInstance(IGH_DataAccess)"/>.
+        /// If the bundle has been written to file, it should be here. 
+        /// This is the file that gets executed.
         /// </summary>
-        public string JSBundlePath => m_jsBundlePath;
+        public string JSBundlePath
+        {
+            get => m_jsBundlePath;
+            private set
+            {
+                if (value != m_jsBundlePath)
+                {
+                    m_jsBundlePath = value;
+                    OnBundlePathChanged();
+                }
+            }
+        }
 
         /// <summary>
         /// If the source code has been extracted, it should be here.
         /// If the file is not found, which will be the case when this component is transferred to another PC, this should be nullified.
         /// </summary>
-        private string m_sourcePath;
+        public string JSSourcePath
+        {
+            get => m_sourcePath;
+            set => m_sourcePath = value;
+        }
 
         /// <summary>
-        /// If the bundle has been written to file, it should be here. 
-        /// This is the file that gets executed.
+        /// The javascript bundle code. Can be extracted to form <see cref="JSBundlePath"/>
         /// </summary>
-        private string m_jsBundlePath;
-
-        /// <summary>
-        /// The javascript bundle code. Can be extracted to form <see cref="m_jsBundlePath"/>
-        /// </summary>
-        private string m_jsBundleCode;
+        public string JSBundleCode
+        {
+            get => m_jsBundleCode;
+            private set => m_jsBundleCode = value;
+        }
 
         /// <summary>
         /// A zip file of the source code of the component the last time it was compiled.
         /// Excludes node modules.
         /// </summary>
-        private byte[] m_sourceCodeZip;
+        public byte[] JSSourceZipContents
+        {
+            get => m_sourceCodeZipContents;
+            private set => m_sourceCodeZipContents = value;
+        }
+
+        /// <summary>
+        /// The relative path to the source code from the <see cref="WorkingDir"/>
+        /// </summary>
+        private string m_sourcePath;
+        /// <summary>
+        /// The relative path to the js bundle from the <see cref="WorkingDir"/>
+        /// </summary>
+        private string m_jsBundlePath;
+        /// <summary>
+        /// The contents of dist/index.js
+        /// </summary>
+        private string m_jsBundleCode;
+        /// <summary>
+        /// The source code for this component
+        /// </summary>
+        private byte[] m_sourceCodeZipContents;
+
+        private void OnBundlePathChanged()
+        {
+            StopWatchFile();
+            if (OnPingDocument() != null)
+            {
+                StartWatchFile();
+            }
+        }
 
         /// <summary>
         /// If true, the source code and/or bundle has been modified since the last time since <see cref="Write(GH_IWriter)"/> was called.
@@ -70,13 +119,13 @@ namespace JavascriptForGrasshopper
             if (m_isModifiedSinceLastWrite)
             {
                 // Create zip file from the source folder
-                if (m_sourcePath != null && File.Exists(GetBundlePathFromSourceFolder(m_sourcePath)))
+                if (JSSourcePath != null && File.Exists(Path.Combine(JSSourcePath, "dist", "index.js")))
                 {
                     // Create a temp folder to copy the source to before creating a zip.
                     // This is so we can exclude node_modules etc. from the zip
                     string tmpDir = Path.Combine(WorkingDir, "Temp");
                     Directory.CreateDirectory(tmpDir);
-                    CopyDirectoryRecursive(m_sourcePath, tmpDir, folder => !m_ignoreFolders.Contains(Path.GetFileName(folder)));
+                    CopyDirectoryRecursive(JSSourcePath, tmpDir, folder => !m_ignoreFolders.Contains(Path.GetFileName(folder)));
                     string zipFile = Path.Combine(WorkingDir, "tmp_source.zip");
                     ZipFile.CreateFromDirectory(tmpDir, zipFile);
 
@@ -85,7 +134,7 @@ namespace JavascriptForGrasshopper
                         using (MemoryStream ms = new MemoryStream())
                         {
                             fs.CopyTo(ms);
-                            m_sourceCodeZip = ms.ToArray();
+                            JSSourceZipContents = ms.ToArray();
                         }
                     };
                     File.Delete(zipFile);
@@ -93,25 +142,27 @@ namespace JavascriptForGrasshopper
                 }
 
                 // Cache the bundled code for execution
-                if (m_jsBundlePath != null && File.Exists(m_jsBundlePath))
+                if (JSBundlePath != null && File.Exists(JSBundlePath))
                 {
-                    m_jsBundleCode = File.ReadAllText(m_jsBundlePath);
+                    JSBundleCode = File.ReadAllText(JSBundlePath);
                 }
             }
             m_isModifiedSinceLastWrite = false;
 
-            Debug.Assert(m_jsBundleCode != null, "No bundle code to store!");
-            writer.SetString("js_bundle_code", m_jsBundleCode);
+            Debug.Assert(JSBundleCode != null, "No bundle code to store!");
+            writer.SetString("js_bundle_code", JSBundleCode);
 
-            Debug.Assert(m_jsBundlePath != null, "No extracted bundle path to store!");
-            writer.SetString("js_bundle_path", m_jsBundlePath);
+            Debug.Assert(JSBundlePath != null, "No extracted bundle path to store!");
+            writer.SetString("js_bundle_path", JSBundlePath);
 
-            Debug.Assert(m_sourceCodeZip != null, "No source code zip found to store!");
-            writer.SetByteArray("js_source_zip", m_sourceCodeZip);
-
-            if (m_sourcePath != null)
+            if (JSSourceZipContents != null)
             {
-                writer.SetString("js_source_path", m_sourcePath);
+                writer.SetByteArray("js_source_zip", JSSourceZipContents);
+            }
+
+            if (JSSourcePath != null)
+            {
+                writer.SetString("js_source_path", JSSourcePath);
             }
 
             writer.SetBoolean("js_is_typescript", IsTypescript);
@@ -125,56 +176,32 @@ namespace JavascriptForGrasshopper
         {
             m_hasDeserialized = true;
 
-            m_jsBundleCode = reader.GetString("js_bundle_code");
-            m_jsBundlePath = reader.GetString("js_bundle_path");
-            m_sourceCodeZip = reader.GetByteArray("js_source_zip");
+            JSBundleCode = reader.GetString("js_bundle_code");
+            JSBundlePath = reader.GetString("js_bundle_path");
+            if (reader.ItemExists("js_source_zip"))
+            {
+                JSSourceZipContents = reader.GetByteArray("js_source_zip");
+            }
+            if (reader.ItemExists("js_source_path"))
+            {
+                JSSourcePath = reader.GetString("js_source_path");
+            }
+
             IsTypescript = reader.GetBoolean("js_is_typescript");
             UseOutputParam = reader.GetBoolean("js_use_output_param");
-            reader.TryGetString("js_source_path", ref m_sourcePath);
             return base.Read(reader);
         }
 
         public override void AddedToDocument(GH_Document document)
         {
             base.AddedToDocument(document);
-            if (!m_hasDeserialized)
-            {
-                GetOrCreateSourceCode();
-            }
-            else
-            {
-                // Ensure we have a bundle file to execute
-                if (m_sourcePath != null && File.Exists(GetBundlePathFromSourceFolder(m_sourcePath)))
-                {
-                    // Use the existing bundle path in the source code
-                    m_jsBundlePath = GetBundlePathFromSourceFolder(m_sourcePath);
-                }
-                else
-                {
-                    Debug.Assert(m_jsBundleCode != null, "Cannot extract saved bundle code. Not found!");
-                    // Create a temporary bundle file to use for runtime execution
-                    m_sourcePath = null;
-                    m_jsBundlePath = Path.Combine(WorkingDir, "Cache", Guid.NewGuid().ToString(), "index.js");
-                    Directory.CreateDirectory(Path.GetDirectoryName(m_jsBundlePath));
-                    File.WriteAllText(m_jsBundlePath, m_jsBundleCode);
-                }
-            }
-
-            Debug.Assert(m_jsBundlePath != null, "Bundle path did not exist after component was added to document!");
-            Debug.Assert(m_jsBundleCode != null, "Bundle code was not stored after component was added to document!");
-
+            EnsureBundle();
             StartWatchFile();
         }
 
         public override void RemovedFromDocument(GH_Document document)
         {
             base.RemovedFromDocument(document);
-            StopWatchFile();
-        }
-
-        public override void MovedBetweenDocuments(GH_Document oldDocument, GH_Document newDocument)
-        {
-            base.MovedBetweenDocuments(oldDocument, newDocument);
             StopWatchFile();
         }
 
@@ -220,6 +247,34 @@ namespace JavascriptForGrasshopper
         }
 
         /// <summary>
+        /// Ensures the js bundle exists
+        /// </summary>
+        private void EnsureBundle()
+        {
+            if (JSBundlePath != null && File.Exists(JSBundlePath))
+            {
+                // OK
+            }
+            else if (JSBundleCode != null)
+            {
+                // Load from cached code
+                JSBundlePath ??= Path.Combine(WorkingDir, "Bundles", "JSComponent-" + Guid.NewGuid().ToString() + ".js");
+                Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
+                File.WriteAllText(JSBundlePath, JSBundleCode);
+            }
+            else if (!m_hasDeserialized)
+            {
+                // Load from template
+                JSBundleCode = File.ReadAllText(Path.Combine(TemplateFolder, "dist", "index.js"));
+                JSBundlePath = Path.Combine(WorkingDir, "Bundles", "JSComponent-" + Guid.NewGuid().ToString() + ".js");
+                Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
+                File.WriteAllText(JSBundlePath, JSBundleCode);
+            }
+
+            Debug.Assert(File.Exists(JSBundlePath), "Bundle file does not exist!");
+        }
+
+        /// <summary>
         /// If this is a new component, instantiate the template and update the index path.
         /// If we have a cached source code location, ensure our paths are correct.
         /// If we don't have a source code location, but this is not a new component, load the serialized source code.
@@ -229,49 +284,45 @@ namespace JavascriptForGrasshopper
         {
             void SetBundleToSourceDirectory()
             {
-                m_jsBundlePath = GetBundlePathFromSourceFolder(m_sourcePath);
-                Debug.Assert(File.Exists(m_jsBundlePath), $"index.js not found at {m_jsBundlePath}!");
-                m_jsBundleCode = File.ReadAllText(m_jsBundlePath);
+                JSBundlePath = Path.Combine(JSSourcePath, "dist", "index.js");
+                Debug.Assert(File.Exists(JSBundlePath), $"index.js not found at {JSBundlePath}!");
+                JSBundleCode = File.ReadAllText(JSBundlePath);
             }
 
-            if (m_sourcePath != null && File.Exists(Path.Combine(m_sourcePath, "dist", "index.js")))
+            if (JSSourcePath != null && File.Exists(Path.Combine(JSSourcePath, "dist", "index.js")))
             {
                 // We already have the source directory and it exists. Prioritize using the dist in the source directory.
                 SetBundleToSourceDirectory();
                 UpdateTypeDefinitions();
                 // It may have changed while we were not monitoring the component, so flag it for re-serialization.
                 m_isModifiedSinceLastWrite = true;
-                return m_sourcePath;
+                return JSSourcePath;
             }
-            else if (m_sourceCodeZip != null)
+            else if (JSSourceZipContents != null)
             {
                 // Set up source code from cache
                 string tmpZipFile = Path.Combine(WorkingDir, "tmp_source_restore.zip");
                 Directory.CreateDirectory(Path.GetDirectoryName(tmpZipFile));
-                File.WriteAllBytes(tmpZipFile, m_sourceCodeZip);
-                m_sourcePath = Path.Combine(WorkingDir, "Source", $"JSComponent-{Guid.NewGuid()}");
-                Directory.CreateDirectory(m_sourcePath);
-                ZipFile.ExtractToDirectory(tmpZipFile, m_sourcePath);
+                File.WriteAllBytes(tmpZipFile, JSSourceZipContents);
+                JSSourcePath = Path.Combine(WorkingDir, "Source", $"JSComponent-{Guid.NewGuid()}");
+                Directory.CreateDirectory(JSSourcePath);
+                ZipFile.ExtractToDirectory(tmpZipFile, JSSourcePath);
                 File.Delete(tmpZipFile);
                 SetBundleToSourceDirectory();
                 UpdateTypeDefinitions();
-                return m_sourcePath;
-            }
-            else if (!m_hasDeserialized)
-            {
-                // Set up source code from template
-                string templateFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "Template");
-                m_sourcePath = Path.Combine(WorkingDir, "Source", "JSComponent-" + Guid.NewGuid().ToString());
-                CopyDirectoryRecursive(templateFolder, m_sourcePath, folder => !m_ignoreFolders.Contains(Path.GetFileName(folder)));
-                SetBundleToSourceDirectory();
-                ConfigureTemplate(m_sourcePath, IsTypescript);
-                UpdateTypeDefinitions();
-                m_isModifiedSinceLastWrite = true;
-                return m_sourcePath;
+                return JSSourcePath;
             }
             else
             {
-                throw new InvalidOperationException("Unable to create soure code. Conditions are not satisfied.");
+                // Set up source code from template
+                string templateFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "Template");
+                JSSourcePath = Path.Combine(WorkingDir, "Source", "JSComponent-" + Guid.NewGuid().ToString());
+                CopyDirectoryRecursive(templateFolder, JSSourcePath, folder => !m_ignoreFolders.Contains(Path.GetFileName(folder)));
+                SetBundleToSourceDirectory();
+                ConfigureTemplate(JSSourcePath, IsTypescript);
+                UpdateTypeDefinitions();
+                m_isModifiedSinceLastWrite = true;
+                return JSSourcePath;
             }
         }
 
@@ -294,17 +345,6 @@ namespace JavascriptForGrasshopper
                 Directory.Delete(Path.Combine(sourcePath, "types"), true);
                 File.Delete(Path.Combine(sourcePath, "tsconfig.json"));
             }
-        }
-
-        /// <summary>
-        /// Gets the path to the javascript bundle in a given source folder. 
-        /// Does not check whether the file exists.
-        /// </summary>inde
-        /// <param name="sourcePath"></param>
-        /// <returns>The bundle path.</returns>
-        private static string GetBundlePathFromSourceFolder(string sourcePath)
-        {
-            return Path.Combine(sourcePath, "dist", "index.js");
         }
 
         /// <summary>
@@ -406,9 +446,9 @@ namespace JavascriptForGrasshopper
                 return;
             }
 
-            string typesFile = Path.Combine(m_sourcePath, "types", "component.d.ts");
+            string typesFile = Path.Combine(JSSourcePath, "types", "component.d.ts");
 
-            if (!Directory.Exists(m_sourcePath))
+            if (!Directory.Exists(JSSourcePath))
             {
                 return;
             }

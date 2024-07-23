@@ -18,7 +18,7 @@ namespace JavascriptForGrasshopper
         /// <summary>
         /// The plugin folder on the users machine.
         /// </summary>
-        private static string PluginInstalledFolder => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
+        public static string PluginInstalledFolder => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
 
         private static NodejsPlatform m_platform;
 
