@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace JavascriptForGrasshopper
 {
@@ -153,7 +154,7 @@ namespace JavascriptForGrasshopper
             writer.SetString("js_bundle_code", JSBundleCode);
 
             Debug.Assert(JSBundlePath != null, "No extracted bundle path to store!");
-            writer.SetString("js_bundle_path", JSBundlePath);
+            writer.SetString("js_bundle_path_relative", GetRelativePath(JSBundlePath));
 
             if (JSSourceZipContents != null)
             {
@@ -162,7 +163,7 @@ namespace JavascriptForGrasshopper
 
             if (JSSourcePath != null)
             {
-                writer.SetString("js_source_path", JSSourcePath);
+                writer.SetString("js_source_path_relative", GetRelativePath(JSSourcePath));
             }
 
             writer.SetBoolean("js_is_typescript", IsTypescript);
@@ -177,19 +178,35 @@ namespace JavascriptForGrasshopper
             m_hasDeserialized = true;
 
             JSBundleCode = reader.GetString("js_bundle_code");
-            JSBundlePath = reader.GetString("js_bundle_path");
+            JSBundlePath = Path.Combine(WorkingDir, reader.GetString("js_bundle_path_relative"));
             if (reader.ItemExists("js_source_zip"))
             {
                 JSSourceZipContents = reader.GetByteArray("js_source_zip");
             }
-            if (reader.ItemExists("js_source_path"))
+            if (reader.ItemExists("js_source_path_relative"))
             {
-                JSSourcePath = reader.GetString("js_source_path");
+                JSSourcePath = Path.Combine(WorkingDir, reader.GetString("js_source_path_relative"));
             }
 
             IsTypescript = reader.GetBoolean("js_is_typescript");
             UseOutputParam = reader.GetBoolean("js_use_output_param");
             return base.Read(reader);
+        }
+
+        /// <summary>
+        /// Gets a relative path to the working directory.
+        /// </summary>
+        /// <param name="absolutePath">The absolute path</param>
+        /// <returns>The relative path</returns>
+        private static string GetRelativePath(string absolutePath)
+        {
+#if NET5_0_OR_GREATER
+            return Path.GetRelativePath(WorkingDir, absolutePath);
+#else
+            string path = absolutePath.Replace(WorkingDir, "");
+            // Remove leading slashes
+            string path1a = new Regex("^[\\\\\\/]+").Replace(path, "");
+#endif
         }
 
         public override void AddedToDocument(GH_Document document)
@@ -296,7 +313,6 @@ namespace JavascriptForGrasshopper
                 UpdateTypeDefinitions();
                 // It may have changed while we were not monitoring the component, so flag it for re-serialization.
                 m_isModifiedSinceLastWrite = true;
-                return JSSourcePath;
             }
             else if (JSSourceZipContents != null)
             {
@@ -310,7 +326,6 @@ namespace JavascriptForGrasshopper
                 File.Delete(tmpZipFile);
                 SetBundleToSourceDirectory();
                 UpdateTypeDefinitions();
-                return JSSourcePath;
             }
             else
             {
@@ -322,8 +337,8 @@ namespace JavascriptForGrasshopper
                 ConfigureTemplate(JSSourcePath, IsTypescript);
                 UpdateTypeDefinitions();
                 m_isModifiedSinceLastWrite = true;
-                return JSSourcePath;
             }
+            return JSSourcePath;
         }
 
         /// <summary>
@@ -366,33 +381,19 @@ namespace JavascriptForGrasshopper
             try
             {
                 // Attempt to launch visual studio code
-                Process launchCodeProcess = Process.Start(new ProcessStartInfo()
-                {
-                    CreateNoWindow = true,
-                    UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    FileName = "code",
-                    Arguments = $"-r \"{sourceFolder}\" \"{sourcePath}\""
-                });
+                Process launchCodeProcess = Process.Start("code", $"-r \"{sourceFolder}\" \"{sourcePath}\"");
                 launchCodeProcess.WaitForExit();
                 launchedEditor = launchCodeProcess.ExitCode == 0;
             }
             catch (Exception e)
             {
-                System.Diagnostics.Debug.WriteLine("Failed to launch code editor due to exception: " + e.Message);
+                Debug.WriteLine("Failed to launch code editor due to exception: " + e.Message);
             }
 
             if (!launchedEditor)
             {
                 // If code fails to open, just browse to the folder.
-                Process.Start(new ProcessStartInfo()
-                {
-                    CreateNoWindow = true,
-                    UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Normal,
-                    FileName = Rhino.Runtime.HostUtils.RunningOnWindows ? "explorer" : "open",
-                    Arguments = $"\"{sourceFolder}\"",
-                });
+                Process.Start(Rhino.Runtime.HostUtils.RunningOnWindows ? "explorer" : "open", $"\"{sourceFolder}\"");
             }
         }
 
