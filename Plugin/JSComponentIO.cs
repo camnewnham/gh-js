@@ -100,12 +100,6 @@ namespace JavascriptForGrasshopper
         /// </summary>
         private byte[] m_sourceCodeZipContents;
 
-        /// <summary>
-        /// If true, AddedToDocument has been called on the component at least once.
-        /// Helps resolve issues where execution order may be different between MacOS and Windows.
-        /// </summary>
-        private bool m_hasAddedToDocument = false;
-
         private void OnBundlePathChanged()
         {
             StopWatchFile();
@@ -215,23 +209,11 @@ namespace JavascriptForGrasshopper
 #endif
         }
 
-        protected override void BeforeSolveInstance()
-        {
-            base.BeforeSolveInstance();
-
-            // Rhino Mac 8.4 runs SolveInstance before AddedToDocument
-            if (!m_hasAddedToDocument)
-            {
-                EnsureBundle();
-            }
-        }
-
         public override void AddedToDocument(GH_Document document)
         {
             base.AddedToDocument(document);
             EnsureBundle();
             StartWatchFile();
-            m_hasAddedToDocument = true;
         }
 
         public override void RemovedFromDocument(GH_Document document)
