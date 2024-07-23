@@ -2,6 +2,7 @@ using Grasshopper.Kernel;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Threading.Tasks;
 
 namespace JavascriptForGrasshopper
 {
@@ -43,13 +44,14 @@ namespace JavascriptForGrasshopper
             document.UndoServer.PushUndoRecord(document.UndoUtil.CreateAddObjectEvent($"Swap {jsComponent.Name}", jsComponent));
 
             // Repair the undo record
-            Grasshopper.Instances.DocumentEditor.BeginInvoke((Action)(() =>
-            {
-                if (document.UndoServer.FirstUndoName == $"Add {Name}")
-                {
-                    document.UndoServer.RemoveRecord(document.UndoServer.UndoGuids[0]);
-                }
-            }));
+            Task.Run(() => {
+                Rhino.RhinoApp.InvokeOnUiThread((Action) (() => {
+                    if (document.UndoServer.FirstUndoName == $"Add {Name}")
+                    {
+                        document.UndoServer.RemoveRecord(document.UndoServer.UndoGuids[0]);
+                    }
+                }));
+            });
         }
     }
 }

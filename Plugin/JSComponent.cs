@@ -24,10 +24,13 @@ namespace JavascriptForGrasshopper
 
         public JSComponent(bool typescript) : this()
         {
-            NickName = "TS";
-            Name = "TypeScript";
-            Description = Description.Replace("JavaScript", "TypeScript");
-            IsTypescript = true;
+            if (typescript) 
+            {
+                NickName = "TS";
+                Name = "TypeScript";
+                Description = Description.Replace("JavaScript", "TypeScript");
+                IsTypescript = true;
+            }
         }
 
         private static string[] m_keywords = new string[]
