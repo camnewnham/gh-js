@@ -103,6 +103,7 @@ namespace JavascriptForGrasshopper
 
                     Access = GH_ParamAccess.item;
                     Owner?.ExpireTypeDefinitions();
+                    Owner?.ExpireSolution(true);
                 }, true, Access == GH_ParamAccess.item);
 
                 Menu_AppendItem(menu, "List Access", (obj, arg) =>
@@ -114,6 +115,7 @@ namespace JavascriptForGrasshopper
 
                     Access = GH_ParamAccess.list;
                     Owner?.ExpireTypeDefinitions();
+                    Owner?.ExpireSolution(true);
                 }, true, Access == GH_ParamAccess.list);
             }
 

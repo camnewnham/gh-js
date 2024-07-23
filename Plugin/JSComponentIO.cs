@@ -116,6 +116,8 @@ namespace JavascriptForGrasshopper
 
             writer.SetBoolean("js_is_typescript", IsTypescript);
 
+            writer.SetBoolean("js_use_output_param", UseOutputParam);
+
             return base.Write(writer);
         }
 
@@ -127,6 +129,7 @@ namespace JavascriptForGrasshopper
             m_jsBundlePath = reader.GetString("js_bundle_path");
             m_sourceCodeZip = reader.GetByteArray("js_source_zip");
             IsTypescript = reader.GetBoolean("js_is_typescript");
+            UseOutputParam = reader.GetBoolean("js_use_output_param");
             reader.TryGetString("js_source_path", ref m_sourcePath);
             return base.Read(reader);
         }
@@ -413,8 +416,8 @@ namespace JavascriptForGrasshopper
             Directory.CreateDirectory(Path.GetDirectoryName(typesFile));
 
             string generated = new Templating.ComponentTypeGenerator(
-                Params.Input.Cast<JSVariableParam>().Select(x => x.GetTypeDefinition()).ToArray(),
-                Params.Output.Cast<JSVariableParam>().Select(x => x.GetTypeDefinition()).ToArray()
+                Params.Input.Where(x => x is JSVariableParam).Cast<JSVariableParam>().Select(x => x.GetTypeDefinition()).ToArray(),
+                Params.Output.Where(x => x is JSVariableParam).Cast<JSVariableParam>().Select(x => x.GetTypeDefinition()).ToArray()
                 ).TransformText();
 
             File.WriteAllText(typesFile, generated);

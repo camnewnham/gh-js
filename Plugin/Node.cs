@@ -13,7 +13,12 @@ namespace JavascriptForGrasshopper
         /// </summary>
         public const int DEBUGGER_PORT = 9229;
 
-        public static string EnvironmentRoot => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
+        public static string EnvironmentRoot => PluginInstalledFolder;
+
+        /// <summary>
+        /// The plugin folder on the users machine.
+        /// </summary>
+        private static string PluginInstalledFolder => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
 
         private static NodejsPlatform m_platform;
 
@@ -26,13 +31,10 @@ namespace JavascriptForGrasshopper
             {
                 if (m_platform == null)
                 {
-                    // TODO: Build, test & support macOS binary
-                    if (!Rhino.Runtime.HostUtils.RunningOnWindows)
-                    {
-                        throw new NotSupportedException("This platform is not supported.");
-                    }
+                    string path = Rhino.Runtime.HostUtils.RunningOnWindows ?
+                        Path.Combine(PluginInstalledFolder, "native", "win-x64", "libnode.dll") :
+                        Path.Combine(PluginInstalledFolder, "native", "osx-universal", "libnode.dylib");
 
-                    string path = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location), "native", "win64", "libnode.dll");
                     m_platform = new NodejsPlatform(path);
 
                     // Create a package.json that specifies that node environments should use module mode

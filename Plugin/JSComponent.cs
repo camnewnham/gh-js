@@ -1,7 +1,10 @@
+using Grasshopper;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Parameters;
 using Microsoft.JavaScript.NodeApi;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading;
@@ -17,6 +20,7 @@ namespace JavascriptForGrasshopper
         public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript with NodeJS.", "Maths", "Script") { }
 
         public bool IsTypescript { get; private set; } = false;
+        public bool UseOutputParam { get; private set; } = true;
 
         public JSComponent(bool typescript) : this()
         {
@@ -47,7 +51,26 @@ namespace JavascriptForGrasshopper
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
+            if (UseOutputParam)
+            {
+                AddOutParam();
+            }
             pManager.AddParameter(((IGH_VariableParameterComponent)this).CreateParameter(GH_ParameterSide.Output, Params.Output.Count));
+        }
+
+        /// <summary>
+        /// Adds the "out" parameter for console.log messages
+        /// </summary>
+        private void AddOutParam()
+        {
+            Debug.Assert(UseOutputParam == true, $"Can not add output parameter when {nameof(UseOutputParam)} is false.");
+            Params.Output.Insert(0, new Param_String()
+            {
+                Name = "Outout",
+                NickName = "out",
+                Description = "Output from console.log() and related commands. \"info\", \"warn\" and \"error\" are also output through the message balloon.",
+                Access = GH_ParamAccess.list
+            });
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -62,7 +85,24 @@ namespace JavascriptForGrasshopper
 
             Node.Environment.RunAsync(async () =>
             {
-                using (new NodeConsole.ConsoleToRuntimeMessage(this))
+                List<string> consoleOutput = new List<string>();
+                using (new NodeConsole.ConsoleToRuntimeMessage((level, msgs) =>
+                {
+                    consoleOutput.AddRange(msgs);
+                    if (level > NodeConsole.MessageLevel.Debug)
+                    {
+                        GH_RuntimeMessageLevel msgLevel = level switch
+                        {
+                            NodeConsole.MessageLevel.Warning => GH_RuntimeMessageLevel.Warning,
+                            NodeConsole.MessageLevel.Error => GH_RuntimeMessageLevel.Error,
+                            _ => GH_RuntimeMessageLevel.Remark,
+                        };
+                        foreach (string str in msgs)
+                        {
+                            AddRuntimeMessage(msgLevel, str);
+                        }
+                    }
+                }))
                 {
                     try
                     {
@@ -83,6 +123,11 @@ namespace JavascriptForGrasshopper
                         }
 
                         ProcessOutputParameters(DA, result);
+
+                        if (UseOutputParam && consoleOutput.Count > 0)
+                        {
+                            DA.SetDataList(0, consoleOutput);
+                        }
                     }
                     catch (JSException jsex)
                     {
@@ -131,7 +176,7 @@ namespace JavascriptForGrasshopper
                 return;
             }
 
-            for (int p = 0; p < Params.Output.Count; p++)
+            for (int p = UseOutputParam ? 1 : 0; p < Params.Output.Count; p++)
             {
                 JSVariableParam param = Params.Output[p] as JSVariableParam;
 
@@ -165,14 +210,45 @@ namespace JavascriptForGrasshopper
         public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
         {
             base.AppendAdditionalMenuItems(menu);
-            Menu_AppendItem(menu, "Enable Debugger", (ev, arg) =>
+
+            Menu_AppendItem(menu, "Launch Code Editor", (obj, arg) =>
+            {
+                LaunchCodeEditor();
+            });
+
+            Menu_AppendItem(menu, "Standard Output/Error Parameter (\"out\")", (obj, arg) =>
+            {
+                UseOutputParam = !UseOutputParam;
+                if (!UseOutputParam)
+                {
+                    Params.Output.RemoveAt(0);
+                    Attributes.ExpireLayout();
+                    Instances.RedrawCanvas();
+                }
+                else
+                {
+                    AddOutParam();
+                    Attributes.ExpireLayout();
+                    Instances.RedrawCanvas();
+                }
+            }, true, UseOutputParam);
+
+
+            Menu_AppendItem(menu, $"Enable Debugger (port {Node.DEBUGGER_PORT})", (ev, arg) =>
             {
                 Node.DebuggerEnabled = !Node.DebuggerEnabled;
             }, true, Node.DebuggerEnabled);
+
         }
 
         bool IGH_VariableParameterComponent.CanInsertParameter(GH_ParameterSide side, int index)
         {
+            // "out" param always comes first.
+            if (side == GH_ParameterSide.Output && index == 0 && UseOutputParam)
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -188,6 +264,10 @@ namespace JavascriptForGrasshopper
 
         bool IGH_VariableParameterComponent.DestroyParameter(GH_ParameterSide side, int index)
         {
+            if (side == GH_ParameterSide.Output && index == 0 && UseOutputParam)
+            {
+                UseOutputParam = false;
+            }
             return true;
         }
 
