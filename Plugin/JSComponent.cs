@@ -1,12 +1,14 @@
 using Grasshopper;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
+using JavascriptForGrasshopper.CodeGenerator;
 using Microsoft.JavaScript.NodeApi;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -17,14 +19,12 @@ namespace JavascriptForGrasshopper
         public override GH_Exposure Exposure => GH_Exposure.secondary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
         protected override Bitmap Icon => IsTypescript ? Resources.logo_typescript : Resources.logo_javascript;
-        public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript with NodeJS.", "Maths", "Script") { }
-
         public bool IsTypescript { get; private set; } = false;
         public bool UseOutputParam { get; private set; } = true;
-
+        public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript with NodeJS.", "Maths", "Script") { }
         public JSComponent(bool typescript) : this()
         {
-            if (typescript) 
+            if (typescript)
             {
                 NickName = "TS";
                 Name = "TypeScript";
@@ -72,7 +72,8 @@ namespace JavascriptForGrasshopper
                 Name = "Outout",
                 NickName = "out",
                 Description = "Output from console.log() and related commands. \"info\", \"warn\" and \"error\" are also output through the message balloon.",
-                Access = GH_ParamAccess.list
+                Access = GH_ParamAccess.list,
+                MutableNickName = false,
             }, 0);
             Params.OnParametersChanged();
         }
@@ -87,6 +88,40 @@ namespace JavascriptForGrasshopper
             Params.OnParametersChanged();
         }
 
+        protected override void BeforeSolveInstance()
+        {
+            base.BeforeSolveInstance();
+            if (!ValidateParams(out string reason))
+            {
+                throw new InvalidDataException(reason);
+            }
+        }
+
+        /// <summary>
+        /// Validates parameter inputs and outputs for syntax and uniqueness.
+        /// </summary>
+        /// <returns>True if the parameters are all valid.</returns>
+        public bool ValidateParams(out string reason)
+        {
+            HashSet<string> inputVariables = new HashSet<string>();
+            HashSet<string> outputVariables = new HashSet<string>();
+            foreach (JSVariableParam param in Params.Input.Concat(Params.Output.Where(p => p is JSVariableParam)))
+            {
+                if (!TypescriptSupport.IsValidVariableName(param.VariableName))
+                {
+                    reason = $"\"{param.VariableName}\" is not a valid variable name";
+                    return false;
+                }
+                if ((param.Kind == GH_ParamKind.input && !inputVariables.Add(param.VariableName)) ||
+                    (param.Kind == GH_ParamKind.output && !outputVariables.Add(param.VariableName)))
+                {
+                    reason = $"Variable \"{param.VariableName}\" is already in use.";
+                    return false;
+                }
+            }
+            reason = null;
+            return true;
+        }
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {

@@ -386,7 +386,14 @@ namespace JavascriptForGrasshopper
 #else
                 string prefix = "--reuse-window ";
 #endif
-                Process launchCodeProcess = Process.Start("code", $"{prefix} \"{sourceFolder}\" \"{sourcePath}\"");
+                Process launchCodeProcess = Process.Start(new ProcessStartInfo()
+                {
+                    FileName = "code",
+                    Arguments = $"{prefix}\"{sourceFolder}\" \"{sourcePath}\"",
+                    UseShellExecute = true,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                });
                 launchCodeProcess.WaitForExit();
                 launchedEditor = launchCodeProcess.ExitCode == 0;
             }
@@ -452,6 +459,11 @@ namespace JavascriptForGrasshopper
                 return;
             }
 
+            if (JSSourcePath == null)
+            {
+                return;
+            }
+
             string typesFile = Path.Combine(JSSourcePath, "types", "component.d.ts");
 
             if (!Directory.Exists(JSSourcePath))
@@ -461,7 +473,7 @@ namespace JavascriptForGrasshopper
 
             Directory.CreateDirectory(Path.GetDirectoryName(typesFile));
 
-            string generated = new Templating.ComponentTypeGenerator(
+            string generated = new CodeGenerator.ComponentTypeGenerator(
                 Params.Input.Where(x => x is JSVariableParam).Cast<JSVariableParam>().Select(x => x.GetTypeDefinition()).ToArray(),
                 Params.Output.Where(x => x is JSVariableParam).Cast<JSVariableParam>().Select(x => x.GetTypeDefinition()).ToArray()
                 ).TransformText();

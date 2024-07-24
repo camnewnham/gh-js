@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace JavascriptForGrasshopper.Templating
+namespace JavascriptForGrasshopper.CodeGenerator
 {
     internal static class TypescriptSupport
     {

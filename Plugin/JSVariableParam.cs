@@ -1,4 +1,6 @@
-﻿using Grasshopper.Kernel;
+﻿using GH_IO.Serialization;
+using Grasshopper;
+using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
 using Microsoft.JavaScript.NodeApi;
@@ -10,9 +12,33 @@ namespace JavascriptForGrasshopper
 {
     public class JSVariableParam : Param_GenericObject
     {
-        public string VariableName => NickName;
-        public string ToolTip => Description;
-        public string PrettyName => Name ?? NickName;
+        public string VariableName
+        {
+            get => NickName;
+            private set => NickName = value;
+        }
+        public string ToolTip
+        {
+            get => Description;
+            set => Description = value;
+        }
+
+        public string PrettyName
+        {
+            get => Name;
+            set => Name = value;
+        }
+
+        /// <summary>
+        /// A name the user may have assigned that is different to the variable name.
+        /// </summary>
+        private string m_prettyName;
+
+        public override string Name
+        {
+            get => string.IsNullOrEmpty(m_prettyName) ? VariableName : m_prettyName;
+            set => m_prettyName = value;
+        }
 
         public override GH_Exposure Exposure => GH_Exposure.hidden;
 
@@ -32,23 +58,22 @@ namespace JavascriptForGrasshopper
         public static JSVariableParam Create(JSComponent component, GH_ParameterSide side, int index)
         {
             return new JSVariableParam(
-                side == GH_ParameterSide.Input ? "Input" : "Output",
-                GH_ComponentParamServer.InventUniqueNickname(side == GH_ParameterSide.Input ? "abcdefghijklmn" : "xyzuvwst", side == GH_ParameterSide.Input ? component.Params.Input : component.Params.Output),
-                side == GH_ParameterSide.Input ? "Input Parameter" : "Output Parameter"
+                null,
+                GH_ComponentParamServer.InventUniqueNickname(side == GH_ParameterSide.Input ? "abcdefghijklmn" : "xyzuvwst", side == GH_ParameterSide.Input ? component.Params.Input : component.Params.Output), side == GH_ParameterSide.Input ? "Input script variable" : "Output script variable"
                 )
             {
                 Optional = true
             };
         }
 
-        public Templating.TypeDefinition GetTypeDefinition()
+        public CodeGenerator.TypeDefinition GetTypeDefinition()
         {
             string tsType = TypeHint.ToString().ToLower() + (Access == GH_ParamAccess.item ? "" : "[]");
-            return new Templating.TypeDefinition()
+            return new CodeGenerator.TypeDefinition()
             {
                 VariableName = NickName,
                 Name = PrettyName,
-                Description = ToolTip,
+                Description = ToolTip?.Replace("*/", ""),
                 Type = tsType,
                 Optional = Optional
             };
@@ -91,9 +116,83 @@ namespace JavascriptForGrasshopper
             return true;
         }
 
+        private static ToolStripTextBox Menu_AppendTextField(ToolStripDropDown menu, string text, Action<string> textChanged, bool closeParentOnEnter = true)
+        {
+            ToolStripTextBox textBox = new ToolStripTextBox()
+            {
+                Text = text,
+                AutoSize = true
+            };
+            textBox.TextChanged += (obj, arg) => textChanged(textBox.Text);
+            textBox.KeyDown += (obj, arg) =>
+            {
+                if (arg.KeyCode == Keys.Enter && closeParentOnEnter)
+                {
+                    menu.Close();
+                }
+            };
+            menu.Items.Add(textBox);
+            textBox.TextBox.MinimumSize = new System.Drawing.Size(200, 0);
+            return textBox;
+        }
+
         public override bool AppendMenuItems(ToolStripDropDown menu)
         {
-            base.AppendMenuItems(menu);
+            void GenerateTypesOnMenuClose(object sender, EventArgs args)
+            {
+                Owner.ExpireTypeDefinitions();
+            }
+
+            ToolStripTextBox variableNameBox = Menu_AppendTextField(menu, VariableName, text =>
+            {
+                VariableName = text;
+                Owner.Attributes.ExpireLayout();
+
+                ClearRuntimeMessages();
+                if (!Owner.ValidateParams(out string err))
+                {
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, err);
+                }
+                else
+                {
+                    ExpireSolution(true);
+                }
+
+                menu.Closed -= GenerateTypesOnMenuClose;
+                menu.Closed += GenerateTypesOnMenuClose;
+                Instances.RedrawCanvas();
+            });
+
+            variableNameBox.BorderStyle = BorderStyle.FixedSingle;
+
+            ToolStripTextBox nameBox = Menu_AppendTextItem(Menu_AppendItem(menu, "Name (for humans, optional):").DropDown, PrettyName, null, (obj, arg) =>
+            {
+                PrettyName = obj.Text;
+                menu.Closed -= GenerateTypesOnMenuClose;
+                menu.Closed += GenerateTypesOnMenuClose;
+            }, true, -1, true);
+
+            ToolStripTextBox tipBox = Menu_AppendTextItem(Menu_AppendItem(menu, "Tooltip (optional):").DropDown, ToolTip, null, (obj, arg) =>
+            {
+                ToolTip = obj.Text;
+                menu.Closed -= GenerateTypesOnMenuClose;
+                menu.Closed += GenerateTypesOnMenuClose;
+            }, true, -1, true);
+            tipBox.ToolTipText = "This is .Description property of input parameter";
+            tipBox.TextBox.AcceptsReturn = true;
+            tipBox.TextBox.Multiline = true;
+            tipBox.AutoSize = false;
+            tipBox.Height = 100;
+
+            Menu_AppendSeparator(menu);
+
+            if (Kind == GH_ParamKind.output)
+            {
+                Menu_AppendPreviewItem(menu);
+            }
+            Menu_AppendBakeItem(menu);
+            Menu_AppendRuntimeMessages(menu);
+            AppendAdditionalMenuItems(menu);
 
 
             if (Kind == GH_ParamKind.input)
@@ -160,7 +259,15 @@ namespace JavascriptForGrasshopper
                 }
             }
 
+            GH_DocumentObject.Menu_AppendSeparator(menu);
+            Menu_AppendObjectHelp(menu);
+
             return true;
+        }
+
+        protected override void Menu_AppendExtractParameter(ToolStripDropDown menu)
+        {
+            return;
         }
 
         /// <summary>
@@ -174,6 +281,21 @@ namespace JavascriptForGrasshopper
             Number,
             String,
             Boolean
+        }
+
+        public override bool Write(GH_IWriter writer)
+        {
+            if (!string.IsNullOrEmpty(m_prettyName))
+            {
+                writer.SetString("pretty_name", m_prettyName);
+            }
+            return base.Write(writer);
+        }
+
+        public override bool Read(GH_IReader reader)
+        {
+            reader.TryGetString("pretty_name", ref m_prettyName);
+            return base.Read(reader);
         }
     }
 }

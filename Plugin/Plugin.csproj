@@ -1,15 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net48;net8.0</TargetFrameworks>
     <Version>1.0</Version>
-    <Title>Plugin</Title>
-    <Description>Description of Plugin</Description>
+    <Title>Javascript for Grasshopper</Title>
+    <Description>Javascript execution node for Grasshopper</Description>
     <TargetExt>.gha</TargetExt>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AssemblyName>JavascriptForGrasshopper</AssemblyName>
     <RootNamespace>JavascriptForGrasshopper</RootNamespace>
-
     <LangVersion>9</LangVersion>
 
   </PropertyGroup>
@@ -73,7 +72,7 @@
     <None Update="Template\types\component.d.ts">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Templating\ComponentTypeGenerator.tt">
+    <None Update="CodeGenerator\ComponentTypeGenerator.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ComponentTypeGenerator.cs</LastGenOutput>
     </None>
@@ -89,7 +88,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Update="Templating\ComponentTypeGenerator.cs">
+    <Compile Update="CodeGenerator\ComponentTypeGenerator.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>ComponentTypeGenerator.tt</DependentUpon>
@@ -126,7 +125,7 @@
   <!-- Generate a javascript template file from the typescript file -->
   <Target Name="CreateTemplateDistribution" AfterTargets="CreateJavascriptTemplate">
     <Message Text="Creating javascript template index.js." Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Template" Command="npx -y tsc --module es2022 --moduleResolution bundler --outdir ." />
+    <Exec WorkingDirectory="$(OutDir)Template" Command="npx -y tsc --module es2022 --moduleResolution node16 --outdir ." />
     <ItemGroup>
       <FileWrites Include="$(OutDir)Template\index.js" />
     </ItemGroup>

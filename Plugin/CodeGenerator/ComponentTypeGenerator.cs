@@ -7,7 +7,7 @@
 //     the code is regenerated.
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace JavascriptForGrasshopper.Templating
+namespace JavascriptForGrasshopper.CodeGenerator
 {
     using System.Linq;
     using System.Text;
@@ -18,7 +18,7 @@ namespace JavascriptForGrasshopper.Templating
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+    #line 1 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
     public partial class ComponentTypeGenerator : ComponentTypeGeneratorBase
     {
@@ -32,7 +32,7 @@ namespace JavascriptForGrasshopper.Templating
                     "ons.\r\n */\r\n\r\nnamespace Component\r\n{\r\n  /**\r\n  * Inputs to the Grasshopper compon" +
                     "ent. \r\n  */\r\n  interface Inputs {\r\n");
             
-            #line 18 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 18 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
 
     var defs = Inputs;
     foreach (var def in defs)
@@ -43,41 +43,41 @@ namespace JavascriptForGrasshopper.Templating
             #line hidden
             this.Write("    /**\r\n     * @name ");
             
-            #line 24 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 24 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.Name));
             
             #line default
             #line hidden
             this.Write("\r\n     * @description ");
             
-            #line 25 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 25 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.Description));
             
             #line default
             #line hidden
             this.Write("\r\n     */\r\n    ");
             
-            #line 27 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 27 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.VariableName));
             
             #line default
             #line hidden
             
-            #line 27 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 27 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.Optional ? "?" : ""));
             
             #line default
             #line hidden
             this.Write(": ");
             
-            #line 27 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 27 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.Type));
             
             #line default
             #line hidden
             this.Write("; \r\n");
             
-            #line 28 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 28 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
 
   }
 
@@ -87,7 +87,7 @@ namespace JavascriptForGrasshopper.Templating
             this.Write("  }\r\n\r\n  /**\r\n  * Outputs from the Grasshopper component. \r\n  */\r\n  interface Out" +
                     "puts {\r\n");
             
-            #line 37 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 37 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
 
     defs = Outputs;
     foreach (var def in defs)
@@ -98,41 +98,41 @@ namespace JavascriptForGrasshopper.Templating
             #line hidden
             this.Write("    /**\r\n     * @name ");
             
-            #line 43 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 43 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.Name));
             
             #line default
             #line hidden
             this.Write("\r\n     * @description ");
             
-            #line 44 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 44 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.Description));
             
             #line default
             #line hidden
             this.Write("\r\n     */\r\n    ");
             
-            #line 46 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 46 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.VariableName));
             
             #line default
             #line hidden
             
-            #line 46 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 46 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.Optional ? "?" : ""));
             
             #line default
             #line hidden
             this.Write(": ");
             
-            #line 46 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 46 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.Type));
             
             #line default
             #line hidden
             this.Write("; \r\n");
             
-            #line 47 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\Templating\ComponentTypeGenerator.tt"
+            #line 47 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
 
   }
 
