@@ -113,7 +113,7 @@
     <Delete Files="$(OutDir)Template\index.js" />
   </Target>
 
-  <!-- Create an initial dist file so the component can run initially -->
+  <!-- Create an initial dist file (dist/index.js) file so the component can run initially -->
   <Target Name="CreateJavascriptTemplate" AfterTargets="CleanTemplate">
     <Message Text="Creating initial dist of the index file." Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Template" Command="npm run build" />
@@ -122,7 +122,7 @@
     </ItemGroup>
   </Target>
 
-  <!-- Generate a javascript template file from the typescript file -->
+  <!-- Generate a javascript template file (index.js) from the typescript file -->
   <Target Name="CreateTemplateDistribution" AfterTargets="CreateJavascriptTemplate">
     <Message Text="Creating javascript template index.js." Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Template" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir ." />
