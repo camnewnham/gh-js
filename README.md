@@ -8,11 +8,15 @@ Write Javascript with modern syntax. `async` and `await` by default.
 
 ### Typescript
 
-Typescript is fully supported. You'll get typed variable names and can provide type hints from the parameters in Grasshopper.
+First-class support for TypeScript. You'll get typed variable names and can provide type hints from the parameters in Grasshopper.
 
 ### Hot Reload
 
 When you use `npm run dev`, your Grasshopper component will hot reload every time you save your code.
+
+### Debugging
+
+Hit breakpoints, catch exceptions and step through your code by attaching a debugger.
 
 ### Bundling
 
