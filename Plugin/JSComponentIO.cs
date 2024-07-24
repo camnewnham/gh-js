@@ -205,7 +205,7 @@ namespace JavascriptForGrasshopper
 #else
             string path = absolutePath.Replace(WorkingDir, "");
             // Remove leading slashes
-            string path1a = new Regex("^[\\\\\\/]+").Replace(path, "");
+            return new Regex("^[\\\\\\/]+").Replace(path, "");
 #endif
         }
 
@@ -381,11 +381,11 @@ namespace JavascriptForGrasshopper
             try
             {
                 // Attempt to launch visual studio code
-                #if DEBUG
+#if DEBUG
                 string prefix = "";
-                #else
+#else
                 string prefix = "--reuse-window ";
-                #endif
+#endif
                 Process launchCodeProcess = Process.Start("code", $"{prefix} \"{sourceFolder}\" \"{sourcePath}\"");
                 launchCodeProcess.WaitForExit();
                 launchedEditor = launchCodeProcess.ExitCode == 0;
