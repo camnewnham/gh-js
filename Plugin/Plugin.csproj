@@ -63,6 +63,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Module\package.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="native\osx-universal\libnode.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -105,6 +108,12 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+
+  <!-- Install npm modules for distribution -->
+  <Target Name="NpmInstall" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Fetching NPM modules" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Module" Command="npm run setup" />
+  </Target>
 
   <!-- Remove generated files before building new ones -->
   <Target Name="CleanTemplate" AfterTargets="CopyFilesToOutputDirectory">

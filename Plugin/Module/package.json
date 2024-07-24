@@ -1,0 +1,13 @@
+{
+  "description": "Node execution environment for Javascript in Grasshopper",
+  "type": "module",
+  "scripts": {
+    "setup": "npm run setup-win-x64 && npm run setup-mac-x64 && npm run setup-mac-arm64",
+    "setup-win-x64": "npm i --cpu x64 --os win",
+    "setup-mac-x64": "npm i --cpu x64 --os darwin ",
+    "setup-mac-arm64": "npm i --cpu arm64 --os darwin"
+  },
+  "dependencies": {
+    "esbuild": "^0.23.0"
+  }
+}

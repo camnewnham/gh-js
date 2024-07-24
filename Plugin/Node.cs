@@ -13,7 +13,7 @@ namespace JavascriptForGrasshopper
         /// </summary>
         public const int DEBUGGER_PORT = 9229;
 
-        public static string EnvironmentRoot => PluginInstalledFolder;
+        public static string EnvironmentRoot => Path.Combine(PluginInstalledFolder, "Module");
 
         /// <summary>
         /// The plugin folder on the users machine.
@@ -36,14 +36,6 @@ namespace JavascriptForGrasshopper
                         Path.Combine(PluginInstalledFolder, "native", "osx-universal", "libnode.dylib");
 
                     m_platform = new NodejsPlatform(path);
-
-                    // Create a package.json that specifies that node environments should use module mode
-                    string package = Path.Combine(EnvironmentRoot, "package.json");
-                    if (!File.Exists(package))
-                    {
-                        File.WriteAllText(package, $"{{\"type\":\"module\"}}");
-
-                    }
                 }
                 return m_platform;
             }
