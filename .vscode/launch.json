@@ -10,7 +10,7 @@
       "program": "/Applications/Rhino 8.app/Contents/MacOS/Rhinoceros",
       // Add in any args here such as /nosplash or even /runscript
       // See : https://developer.rhino3d.com/guides/cpp/running-rhino-from-command-line/
-      "args": ["-runscript=_Grasshopper"],
+      "args": "-runscript=\"_Grasshopper\"",
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
       "console": "internalConsole",
