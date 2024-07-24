@@ -125,7 +125,7 @@
   <!-- Generate a javascript template file from the typescript file -->
   <Target Name="CreateTemplateDistribution" AfterTargets="CreateJavascriptTemplate">
     <Message Text="Creating javascript template index.js." Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Template" Command="tsc --module es2022 --target es2022 --moduleResolution node" />
+    <Exec WorkingDirectory="$(OutDir)Template" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir ." />
     <ItemGroup>
       <FileWrites Include="$(OutDir)Template\index.js" />
     </ItemGroup>
