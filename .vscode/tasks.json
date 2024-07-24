@@ -1,19 +1,17 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "build-plugin-netcore",
-            // This will ensure the project is built before we try to debug it
-            "command": "dotnet build ${workspaceFolder}/**/*.csproj -f net8.0",
-            "type": "shell",
-            "args": [],
-            "problemMatcher": [
-                "$msCompile"
-            ],
-            "presentation": {
-                "reveal": "always"
-            },
-            "group": "build"
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-plugin-netcore",
+      // This will ensure the project is built before we try to debug it
+      "command": "dotnet build ${workspaceFolder}/Plugin/Plugin.csproj -f net8.0",
+      "type": "shell",
+      "args": [],
+      "problemMatcher": ["$msCompile"],
+      "presentation": {
+        "reveal": "always"
+      },
+      "group": "build"
+    }
+  ]
 }
