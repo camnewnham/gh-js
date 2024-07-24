@@ -368,6 +368,11 @@ namespace JavascriptForGrasshopper
         /// </summary>
         public void LaunchCodeEditor()
         {
+            if (!DependencyUtil.ValidateDependencyInstallation())
+            {
+                return;
+            }
+
             string sourceFolder = GetOrCreateSourceCode();
 
             string sourcePath = Path.Combine(sourceFolder, "index.js");

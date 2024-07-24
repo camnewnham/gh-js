@@ -69,7 +69,7 @@ namespace JavascriptForGrasshopper
             Debug.Assert(UseOutputParam == true, $"Can not add output parameter when {nameof(UseOutputParam)} is false.");
             Params.RegisterOutputParam(new Param_String()
             {
-                Name = "Outout",
+                Name = "Out",
                 NickName = "out",
                 Description = "Output from console.log() and related commands. \"info\", \"warn\" and \"error\" are also output through the message balloon.",
                 Access = GH_ParamAccess.list,
