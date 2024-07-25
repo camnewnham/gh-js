@@ -17,7 +17,7 @@
       // RHINO_PACKAGE_DIRS is required for Multi-Targeted plugins
       // This is what enables Rhino to register our Plug-in
       "env": {
-        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/bin/Debug/"
+        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/Plugin/bin/Debug/"
       }
     },
     {
@@ -33,7 +33,7 @@
       // RHINO_PACKAGE_DIRS is required for Multi-Targeted plugins
       // This is what enables Rhino to register our Plug-in
       "env": {
-        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/bin/Debug/"
+        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/Plugin/bin/Debug/"
       }
     }
   ],

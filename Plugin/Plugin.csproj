@@ -14,16 +14,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Template\dist\**" />
-    <EmbeddedResource Remove="Template\dist\**" />
-    <None Remove="Template\dist\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="Template\index.d.ts" />
     <None Remove="Template\index.ts" />
     <None Remove="Template\package.json" />
     <None Remove="Template\tsconfig.json" />
+    <None Remove="Template\index.ts" />
   </ItemGroup>
 
   <ItemGroup>
@@ -63,8 +58,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Module\bundle.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Module\package.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="native\osx-universal\libnode.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -128,15 +126,6 @@
     <Exec WorkingDirectory="$(OutDir)Template" Command="npm run build" />
     <ItemGroup>
       <FileWrites Include="$(OutDir)Template\dist\index.js" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Generate a javascript template file (index.js) from the typescript file -->
-  <Target Name="CreateTemplateDistribution" AfterTargets="CreateJavascriptTemplate">
-    <Message Text="Creating javascript template index.js." Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Template" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir ." />
-    <ItemGroup>
-      <FileWrites Include="$(OutDir)Template\index.js" />
     </ItemGroup>
   </Target>
 

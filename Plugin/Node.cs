@@ -1,8 +1,11 @@
-﻿using Microsoft.JavaScript.NodeApi.Runtime;
+﻿using Microsoft.JavaScript.NodeApi;
+using Microsoft.JavaScript.NodeApi.Runtime;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace JavascriptForGrasshopper
 {
@@ -13,12 +16,12 @@ namespace JavascriptForGrasshopper
         /// </summary>
         public const int DEBUGGER_PORT = 9229;
 
-        public static string EnvironmentRoot => Path.Combine(PluginInstalledFolder, "Module");
+        public static string ModuleRootFolder => Path.Combine(PluginFolder, "Module");
 
         /// <summary>
         /// The plugin folder on the users machine.
         /// </summary>
-        public static string PluginInstalledFolder => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
+        public static string PluginFolder => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
 
         private static NodejsPlatform m_platform;
 
@@ -32,8 +35,8 @@ namespace JavascriptForGrasshopper
                 if (m_platform == null)
                 {
                     string path = Rhino.Runtime.HostUtils.RunningOnWindows ?
-                        Path.Combine(PluginInstalledFolder, "native", "win-x64", "libnode.dll") :
-                        Path.Combine(PluginInstalledFolder, "native", "osx-universal", "libnode.dylib");
+                        Path.Combine(PluginFolder, "native", "win-x64", "libnode.dll") :
+                        Path.Combine(PluginFolder, "native", "osx-universal", "libnode.dylib");
 
                     m_platform = new NodejsPlatform(path);
                 }
@@ -55,9 +58,7 @@ namespace JavascriptForGrasshopper
                 if (m_environment == null)
                 {
                     // Use the package.json in the plugin root folder.
-                    string dir = Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
-
-                    m_environment = Platform.CreateEnvironment(dir);
+                    m_environment = Platform.CreateEnvironment(ModuleRootFolder);
 
                     NodeConsole.SetupConsole(m_environment);
 
@@ -68,6 +69,27 @@ namespace JavascriptForGrasshopper
                 }
                 return m_environment;
             }
+        }
+
+        /// <summary>
+        /// Creates a JS bundle from a source folder
+        /// </summary>
+        /// <param name="entryPoint">The entry point, typically index.js in the source folder.</param>
+        /// <param name="outFile">The output js file.</param>
+        internal static void Bundle(string entryPoint, string outFile, bool minify=true)
+        {
+            var mre = new ManualResetEventSlim(false);
+
+            Environment.RunAsync(async () =>
+            {
+                string bundleScript = Path.Combine(ModuleRootFolder, "bundle.js");
+                JSValue bundleFunction = await Environment.ImportAsync(bundleScript, "bundle", true);
+                bundleFunction.Call(thisArg: default, entryPoint, outFile, minify);
+                mre.Set();
+            });
+
+            mre.Wait();
+            
         }
 
         /// <summary>
