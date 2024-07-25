@@ -14,26 +14,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Template\index.d.ts" />
-    <None Remove="Template\index.ts" />
-    <None Remove="Template\package.json" />
-    <None Remove="Template\tsconfig.json" />
-    <None Remove="Template\index.ts" />
+    <None Remove="Templates\index.ts" />
+    <None Remove="Templates\package.json" />
+    <None Remove="Templates\tsconfig.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Template\.vscode\launch.json">
+    <None Include="Templates\ts\.vscode\launch.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content> 
-    <Content Include="Template\index.ts">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Template\package.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Template\tsconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -58,24 +47,36 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Module\bundle.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Module\package.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="native\osx-universal\libnode.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="native\win-x64\libnode.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Template\types\component.d.ts">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="CodeGenerator\ComponentTypeGenerator.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ComponentTypeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Templates\node\index.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\node\package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\node\tsconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ts\index.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ts\package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ts\tsconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ts\types\component.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
@@ -84,6 +85,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Bundler.cs">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Compile>
     <Compile Update="Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -97,35 +101,46 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Template\types\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Update="Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 
-  <!-- Install npm modules for distribution -->
+
   <Target Name="NpmInstall" AfterTargets="CopyFilesToOutputDirectory">
     <Message Text="Fetching NPM modules" Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Module" Command="npm run setup" />
+    <Exec WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup" />
   </Target>
-
-  <!-- Remove generated files before building new ones -->
-  <Target Name="CleanTemplate" AfterTargets="CopyFilesToOutputDirectory">
-    <Message Text="Cleaning template folder" Importance="high" />
-    <RemoveDir Directories="$(OutDir)Template\dist" />
-    <Delete Files="$(OutDir)Template\index.js" />
-  </Target>
-
-  <!-- Create an initial dist file (dist/index.js) file so the component can run initially -->
-  <Target Name="CreateJavascriptTemplate" AfterTargets="CleanTemplate">
-    <Message Text="Creating initial dist of the index file." Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Template" Command="npm run build" />
+  
+  <Target Name="CreateNodeScripts" AfterTargets="NpmInstall">
+    <Message Text="TypeScript Compiling Templates/node" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Templates/node" Command="tsc" />
     <ItemGroup>
-      <FileWrites Include="$(OutDir)Template\dist\index.js" />
+      <RemoveTypeScript Include="$(OutDir)Templates/node/tsconfig.json" />
+      <RemoveTypeScript Include="$(OutDir)Templates/node/*.ts" />
+      <RemoveTypeScript Include="$(OutDir)Templates/node/*.d.ts" />
+    </ItemGroup>
+    <Delete Files="@(RemoveTypeScript)" />
+  </Target>
+
+  <Target Name="CreateInitialBundle" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Creating Templates/bundle/index.js" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="npx -y esbuild index.* --outdir=..\bundle --platform=node --bundle --minify" />
+  </Target>
+
+  <Target Name="CreateJSTemplate" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Creating Template/js/*" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir ..\js" />
+    <ItemGroup>
+      <SharedFiles Include="$(OutDir)Templates/ts/.vscode/**" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SharedFiles)" DestinationFolder="$(OutDir)Templates/js/%(RecursiveDir)" />
+  </Target>
+
+  <Target Name="RegisterFileCleanUp" AfterTargets="CopyFilesToOutputDirectory;NpmInstall">
+    <ItemGroup>
+      <FileWrites Include="$(OutDir)Templates\**\*.*" />
     </ItemGroup>
   </Target>
 

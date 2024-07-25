@@ -1,6 +1,0 @@
-{
-  "scripts": {
-    "build": "npx -y esbuild index.* --outdir=dist --platform=node --bundle --minify",
-    "dev": "npx -y esbuild index.* --outdir=dist --platform=node --sourcemap=inline --bundle --watch"
-  }
-}

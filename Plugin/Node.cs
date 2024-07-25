@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace JavascriptForGrasshopper
@@ -16,7 +15,7 @@ namespace JavascriptForGrasshopper
         /// </summary>
         public const int DEBUGGER_PORT = 9229;
 
-        public static string ModuleRootFolder => Path.Combine(PluginFolder, "Module");
+        public static string ModuleRootFolder => Path.Combine(JSComponent.TemplatesFolder, "node");
 
         /// <summary>
         /// The plugin folder on the users machine.
@@ -76,32 +75,53 @@ namespace JavascriptForGrasshopper
         /// </summary>
         /// <param name="entryPoint">The entry point, typically index.js in the source folder.</param>
         /// <param name="outFile">The output js file.</param>
-        internal static void Bundle(string entryPoint, string outFile, bool minify=true)
+        internal static async Task<bool> Bundle(string entryPoint, string outFile, Action<NodeConsole.MessageLevel, string[]> errorCallback = null, bool minify = true)
         {
-            var mre = new ManualResetEventSlim(false);
-
-            Environment.RunAsync(async () =>
+            bool success = false;
+            await Environment.RunAsync(async () =>
             {
-                try
+                using (new NodeConsole.ConsoleToRuntimeMessage((level, msgs) =>
                 {
-                    string bundleScript = Path.Combine(ModuleRootFolder, "bundle.js");
-                    JSValue bundleFunction = await Environment.ImportAsync(bundleScript, "bundle", true);
-                    bundleFunction.Call(thisArg: default, entryPoint, outFile, minify);
-                }
-                finally
+                    errorCallback?.Invoke(level, msgs);
+                }))
                 {
-                    mre.Set();
+                    try
+                    {
+                        string bundleScript = Path.Combine(ModuleRootFolder, "index.js");
+                        JSValue bundleFunction = await Environment.ImportAsync(bundleScript, "bundle", true);
+                        bool isFunc = bundleFunction.IsFunction();
+                        Debug.Assert(bundleFunction.IsFunction(), "Bundle was not a function!");
+                        JSValue buildResult = bundleFunction.Call(thisArg: default, entryPoint, outFile, minify);
+
+                        if (buildResult.IsPromise())
+                        {
+                            buildResult = await ((JSPromise)buildResult).AsTask();
+                        }
+                        if (buildResult.IsBoolean())
+                        {
+                            success = buildResult.GetValueBool();
+                        }
+                        else
+                        {
+                            throw new InvalidDataException("Expected a boolean result from the JS bundle function.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Something went wrong during bundling...");
+                        Debug.WriteLine(ex.ToString());
+                        success = false;
+                    }
                 }
             });
+            return success;
 
-            mre.Wait();
-            
         }
 
         /// <summary>
         /// Called when imports need to be re-resolved (i.e. a script we depend on has changed).
         /// </summary>
-        public static void Reset()
+        public static void ClearEnvironment()
         {
             m_environment?.Dispose();
             m_environment = null;
