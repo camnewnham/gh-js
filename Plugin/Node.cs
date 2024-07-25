@@ -82,10 +82,16 @@ namespace JavascriptForGrasshopper
 
             Environment.RunAsync(async () =>
             {
-                string bundleScript = Path.Combine(ModuleRootFolder, "bundle.js");
-                JSValue bundleFunction = await Environment.ImportAsync(bundleScript, "bundle", true);
-                bundleFunction.Call(thisArg: default, entryPoint, outFile, minify);
-                mre.Set();
+                try
+                {
+                    string bundleScript = Path.Combine(ModuleRootFolder, "bundle.js");
+                    JSValue bundleFunction = await Environment.ImportAsync(bundleScript, "bundle", true);
+                    bundleFunction.Call(thisArg: default, entryPoint, outFile, minify);
+                }
+                finally
+                {
+                    mre.Set();
+                }
             });
 
             mre.Wait();
