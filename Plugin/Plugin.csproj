@@ -162,7 +162,7 @@
 
   <Target Name="CreateInitialBundle" AfterTargets="CopyFilesToOutputDirectory">
     <Message Text="Creating Templates/bundle/index.js" Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="npx -y esbuild index.* --outdir=..\bundle --platform=node --bundle --minify" />
+    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="npx -y esbuild index.* --outdir=../bundle --platform=node --bundle --minify" />
   </Target>
 
   <Target Name="CreateJSTemplate" AfterTargets="CopyFilesToOutputDirectory">
