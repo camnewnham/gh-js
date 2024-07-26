@@ -17,10 +17,11 @@ jobs:
       - uses: microsoft/setup-msbuild@v2
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '21'
           
       - name: Build
         run: |
+          npm i -g typescript@latest
           msbuild /restore /p:Configuration=Release /p:Platform=Mac /p:TargetFramework=net7.0
           msbuild /restore /p:Configuration=Release /p:Platform=Windows /p:TargetFrameworks=net7.0
           msbuild /restore /p:Configuration=Release /p:Platform=Windows /p:TargetFramework=net4.8
