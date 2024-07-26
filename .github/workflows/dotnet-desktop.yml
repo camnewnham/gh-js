@@ -1,0 +1,76 @@
+name: Yak
+
+on:
+  # Triggers the workflow on 4 digit tags
+  push:
+    tags:
+      - '*.*.*'  
+      - '*.*.*-pre'  
+
+jobs:
+  build:
+    name: "Build"
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Build
+        run: |
+          msbuild /restore /p:Configuration=Release /p:Platform=Mac /p:TargetFramework=net7.0
+          msbuild /restore /p:Configuration=Release /p:Platform=Windows /p:TargetFrameworks=net7.0
+          msbuild /restore /p:Configuration=Release /p:Platform=Windows /p:TargetFramework=net4.8
+
+      - name: Download Yak
+        run:  curl https://files.mcneel.com/yak/tools/latest/yak.exe -o yak.exe
+ 
+      - name: Package
+        id: package
+        run: |
+          cp "..\Plugin\bin\Mac\Release\net7.0\" "package\net7.0-macos" -r
+          cp "..\Plugin\bin\Windows\Release\net7.0\" "package\net7.0-windows" -r
+          cp "..\Plugin\bin\Windows\Release\net4.8\" "package\net4.8-windows" -r
+          
+          cd package
+          ..\yak.exe build --platform any --version ${{ github.ref_name }}
+          
+          $yakfile = (ls *.yak).FullName
+          echo "YAK_PACKAGE=$yakfile" >> "$env:GITHUB_OUTPUT"
+        env:
+          YAK_TOKEN: ${{ secrets.YAK_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4.3.4
+        with:
+          name: YakPackage
+          path: ${{ steps.package.outputs.YAK_PACKAGE }}
+          compression-level: 0
+          retention-days: 90
+          if-no-files-found: error
+
+  publish:
+    name: "Publish to Yak"
+    needs: [build]
+    runs-on: windows-latest
+    
+    steps:
+      - name: Download artifact
+        id: download
+        uses: actions/download-artifact@v4
+        with:
+          name: YakPackage
+
+      - name: Download Yak
+        run:  curl https://files.mcneel.com/yak/tools/latest/yak.exe -o yak.exe
+          
+      - name: Publish
+        run: |
+          echo "Would publish ${{ steps.download.outputs.download-path }}"
+        # .\yak.exe push ${{ steps.download.outputs.download-path }}
+        env:
+          YAK_TOKEN: ${{ secrets.YAK_TOKEN }}
+            
