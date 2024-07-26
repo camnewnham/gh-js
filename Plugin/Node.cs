@@ -33,11 +33,26 @@ namespace JavascriptForGrasshopper
             {
                 if (m_platform == null)
                 {
-                    string path = Rhino.Runtime.HostUtils.RunningOnWindows ?
-                        Path.Combine(PluginFolder, "native", "win-x64", "libnode.dll") :
+                    string path =
+#if RHINO_WIN
+                        Path.Combine(PluginFolder, "native", "win-x64", "libnode.dll");
+#else
                         Path.Combine(PluginFolder, "native", "osx-universal", "libnode.dylib");
+#endif
 
                     m_platform = new NodejsPlatform(path);
+
+                    string esbuildBinaryPath =
+#if RHINO_MAC && RHINO_ARM64
+                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "darwin-arm64", "bin", "esbuild");
+#elif RHINO_MAC && RHINO_X64
+                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "darwin-x64", "bin", "esbuild");
+#elif RHINO_WIN && RHINO_X64
+                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "win32-x64", "bin", "esbuild.exe");
+#else
+#error Unsupported ESBuild platform
+#endif
+                    System.Environment.SetEnvironmentVariable("ESBUILD_BINARY_PATH", esbuildBinaryPath);
                 }
                 return m_platform;
             }

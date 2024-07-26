@@ -2,12 +2,11 @@
   "description": "Node execution environment for Javascript in Grasshopper",
   "type": "module",
   "scripts": {
-    "setup": "npm run setup-win-x64 && npm run setup-mac-x64 && npm run setup-mac-arm64",
-    "setup-win-x64": "npm i --cpu x64 --os win",
-    "setup-mac-x64": "npm i --cpu x64 --os darwin ",
-    "setup-mac-arm64": "npm i --cpu arm64 --os darwin"
+    "setup-win-x64": "npm i @esbuild/win32-x64@0.23.0 --force --ignore-scripts --omit=optional",
+    "setup-mac-x64": "npm i @esbuild/darwin-x64@0.23.0 --force --ignore-scripts --omit=optional",
+    "setup-mac-arm64": "npm i @esbuild/darwin-arm64@0.23.0 --force --ignore-scripts --omit=optional"
   },
   "dependencies": {
-    "esbuild": "^0.23.0"
+    "esbuild": "0.23.0"
   }
 }
