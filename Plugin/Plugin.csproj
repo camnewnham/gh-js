@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net8.0</TargetFrameworks>
+    <TargetFrameworks>net48;net7.0</TargetFrameworks>
     <Version>1.0</Version>
     <Title>Javascript for Grasshopper</Title>
     <Description>Javascript execution node for Grasshopper</Description>
@@ -71,20 +71,24 @@
     <PackageReference Include="System.CodeDom" Version="8.0.0" />
   </ItemGroup>
 
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
-    <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
-    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.WindowsDesktop.App.Ref" GeneratePathProperty="true" Version="8.0.0" ExcludeAssets="all" />
-    <Reference Include="$(PkgMicrosoft_WindowsDesktop_App_Ref)\ref\net8.0\System.Windows.Forms.dll">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
+  <Choose>
+    <When Condition="$(TargetFramework.Contains('net4'))">
+      <ItemGroup>
+        <Reference Include="System.Windows.Forms" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+        <PackageReference Include="System.Resources.Extensions" Version="7.0.0" />
+        <PackageReference Include="Microsoft.WindowsDesktop.App.Ref" GeneratePathProperty="true" Version="7.0.0" ExcludeAssets="all" />
+        <Reference Include="$(PkgMicrosoft_WindowsDesktop_App_Ref)\ref\net7.0\System.Windows.Forms.dll">
+          <Private>False</Private>
+        </Reference>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  
   <ItemGroup>
     <None Update="CodeGenerator\ComponentTypeGenerator.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
