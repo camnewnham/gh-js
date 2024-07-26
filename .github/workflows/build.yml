@@ -70,8 +70,10 @@ jobs:
           
       - name: Publish
         run: |
-          echo "Would publish ${{ steps.download.outputs.download-path }}"
-        # .\yak.exe push ${{ steps.download.outputs.download-path }}
+          ls -r
+          $file = (ls *.yak).FullName
+          echo "Would publish $file"
+        # .\yak.exe push $file
         env:
           YAK_TOKEN: ${{ secrets.YAK_TOKEN }}
             
