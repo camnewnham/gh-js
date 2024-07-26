@@ -49,7 +49,6 @@ namespace JavascriptForGrasshopper
         {
             pManager.AddParameter(((IGH_VariableParameterComponent)this).CreateParameter(GH_ParameterSide.Input, Params.Input.Count));
             pManager.AddParameter(((IGH_VariableParameterComponent)this).CreateParameter(GH_ParameterSide.Input, Params.Input.Count));
-
         }
 
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
@@ -123,6 +122,25 @@ namespace JavascriptForGrasshopper
             return true;
         }
 
+        /// <summary>
+        /// Utility for adding runtime messages from nodejs
+        /// </summary>
+        /// <param name="level">The console message level</param>
+        /// <param name="msgs">A list of messages if console.log(a,b,c,d) was used.</param>
+        internal void AddRuntimeMessage(NodeConsole.MessageLevel level, string[] msgs)
+        {
+            GH_RuntimeMessageLevel msgLevel = level switch
+            {
+                NodeConsole.MessageLevel.Warning => GH_RuntimeMessageLevel.Warning,
+                NodeConsole.MessageLevel.Error => GH_RuntimeMessageLevel.Error,
+                _ => GH_RuntimeMessageLevel.Remark,
+            };
+            foreach (string str in msgs)
+            {
+                AddRuntimeMessage(msgLevel, str);
+            }
+        }
+
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             Debug.Assert(JSBundlePath != null, "Bundle path was not set");
@@ -138,16 +156,7 @@ namespace JavascriptForGrasshopper
                     consoleOutput.AddRange(msgs);
                     if (level > NodeConsole.MessageLevel.Debug)
                     {
-                        GH_RuntimeMessageLevel msgLevel = level switch
-                        {
-                            NodeConsole.MessageLevel.Warning => GH_RuntimeMessageLevel.Warning,
-                            NodeConsole.MessageLevel.Error => GH_RuntimeMessageLevel.Error,
-                            _ => GH_RuntimeMessageLevel.Remark,
-                        };
-                        foreach (string str in msgs)
-                        {
-                            AddRuntimeMessage(msgLevel, str);
-                        }
+                        AddRuntimeMessage(level, msgs);
                     }
                 }))
                 {
@@ -178,7 +187,7 @@ namespace JavascriptForGrasshopper
                     }
                     catch (JSException jsex)
                     {
-                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "A JavaScript exception occurred: " + jsex.Message);
+                        AddRuntimeMessage(GH_RuntimeMessageLevel.Error, jsex.Message ?? "A javascript error occurred.");
                     }
                     finally
                     {
@@ -285,6 +294,13 @@ namespace JavascriptForGrasshopper
                 Node.DebuggerEnabled = !Node.DebuggerEnabled;
             }, true, Node.DebuggerEnabled);
 
+        }
+
+        public void LaunchCodeEditor()
+        {
+            string srcFolder = GetOrCreateSourceCode();
+            string entryPoint = Path.Combine(srcFolder, IsTypescript ? "index.ts" : "index.js");
+            Utils.LaunchCodeEditor(entryPoint);
         }
 
         bool IGH_VariableParameterComponent.CanInsertParameter(GH_ParameterSide side, int index)

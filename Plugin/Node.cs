@@ -1,8 +1,10 @@
-﻿using Microsoft.JavaScript.NodeApi.Runtime;
+﻿using Microsoft.JavaScript.NodeApi;
+using Microsoft.JavaScript.NodeApi.Runtime;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace JavascriptForGrasshopper
 {
@@ -13,12 +15,12 @@ namespace JavascriptForGrasshopper
         /// </summary>
         public const int DEBUGGER_PORT = 9229;
 
-        public static string EnvironmentRoot => PluginInstalledFolder;
+        public static string ModuleRootFolder => Path.Combine(JSComponent.TemplatesFolder, "node");
 
         /// <summary>
         /// The plugin folder on the users machine.
         /// </summary>
-        public static string PluginInstalledFolder => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
+        public static string PluginFolder => Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
 
         private static NodejsPlatform m_platform;
 
@@ -31,19 +33,26 @@ namespace JavascriptForGrasshopper
             {
                 if (m_platform == null)
                 {
-                    string path = Rhino.Runtime.HostUtils.RunningOnWindows ?
-                        Path.Combine(PluginInstalledFolder, "native", "win-x64", "libnode.dll") :
-                        Path.Combine(PluginInstalledFolder, "native", "osx-universal", "libnode.dylib");
+                    string path =
+#if RHINO_WIN
+                        Path.Combine(PluginFolder, "native", "win-x64", "libnode.dll");
+#else
+                        Path.Combine(PluginFolder, "native", "osx-universal", "libnode.dylib");
+#endif
 
                     m_platform = new NodejsPlatform(path);
 
-                    // Create a package.json that specifies that node environments should use module mode
-                    string package = Path.Combine(EnvironmentRoot, "package.json");
-                    if (!File.Exists(package))
-                    {
-                        File.WriteAllText(package, $"{{\"type\":\"module\"}}");
-
-                    }
+                    string esbuildBinaryPath =
+#if RHINO_MAC && RHINO_ARM64
+                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "darwin-arm64", "bin", "esbuild");
+#elif RHINO_MAC && RHINO_X64
+                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "darwin-x64", "bin", "esbuild");
+#elif RHINO_WIN && RHINO_X64
+                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "win32-x64", "bin", "esbuild.exe");
+#else
+#error Unsupported ESBuild platform
+#endif
+                    System.Environment.SetEnvironmentVariable("ESBUILD_BINARY_PATH", esbuildBinaryPath);
                 }
                 return m_platform;
             }
@@ -63,9 +72,7 @@ namespace JavascriptForGrasshopper
                 if (m_environment == null)
                 {
                     // Use the package.json in the plugin root folder.
-                    string dir = Path.GetDirectoryName(Assembly.GetAssembly(typeof(Node)).Location);
-
-                    m_environment = Platform.CreateEnvironment(dir);
+                    m_environment = Platform.CreateEnvironment(ModuleRootFolder);
 
                     NodeConsole.SetupConsole(m_environment);
 
@@ -79,9 +86,57 @@ namespace JavascriptForGrasshopper
         }
 
         /// <summary>
+        /// Creates a JS bundle from a source folder
+        /// </summary>
+        /// <param name="entryPoint">The entry point, typically index.js in the source folder.</param>
+        /// <param name="outFile">The output js file.</param>
+        internal static async Task<bool> Bundle(string entryPoint, string outFile, Action<NodeConsole.MessageLevel, string[]> errorCallback = null, bool minify = true)
+        {
+            bool success = false;
+            await Environment.RunAsync(async () =>
+            {
+                using (new NodeConsole.ConsoleToRuntimeMessage((level, msgs) =>
+                {
+                    errorCallback?.Invoke(level, msgs);
+                }))
+                {
+                    try
+                    {
+                        string bundleScript = Path.Combine(ModuleRootFolder, "index.js");
+                        JSValue bundleFunction = await Environment.ImportAsync(bundleScript, "bundle", true);
+                        bool isFunc = bundleFunction.IsFunction();
+                        Debug.Assert(bundleFunction.IsFunction(), "Bundle was not a function!");
+                        JSValue buildResult = bundleFunction.Call(thisArg: default, entryPoint, outFile, minify);
+
+                        if (buildResult.IsPromise())
+                        {
+                            buildResult = await ((JSPromise)buildResult).AsTask();
+                        }
+                        if (buildResult.IsBoolean())
+                        {
+                            success = buildResult.GetValueBool();
+                        }
+                        else
+                        {
+                            throw new InvalidDataException("Expected a boolean result from the JS bundle function.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Something went wrong during bundling...");
+                        Debug.WriteLine(ex.ToString());
+                        success = false;
+                    }
+                }
+            });
+            return success;
+
+        }
+
+        /// <summary>
         /// Called when imports need to be re-resolved (i.e. a script we depend on has changed).
         /// </summary>
-        public static void Reset()
+        public static void ClearEnvironment()
         {
             m_environment?.Dispose();
             m_environment = null;

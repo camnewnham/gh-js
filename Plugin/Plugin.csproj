@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net8.0</TargetFrameworks>
+    <TargetFrameworks>net48;net7.0</TargetFrameworks>
     <Version>1.0</Version>
     <Title>Javascript for Grasshopper</Title>
     <Description>Javascript execution node for Grasshopper</Description>
@@ -10,35 +10,58 @@
     <AssemblyName>JavascriptForGrasshopper</AssemblyName>
     <RootNamespace>JavascriptForGrasshopper</RootNamespace>
     <LangVersion>9</LangVersion>
-
+    <Platforms>mac-x64;mac-arm64;win-x64</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
+  <Choose>
+    <When Condition="$(Platform.Contains('mac'))">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);RHINO_MAC</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <None Update="native\osx-universal\libnode.dylib">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+      </ItemGroup>
+    </When>
+    
+    <When Condition="$(Platform.Contains('win'))">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);RHINO_WIN</DefineConstants>
+      </PropertyGroup>
+      <ItemGroup>
+        <None Update="native\win-x64\libnode.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <Choose>
+    <When Condition="$(Platform.Contains('arm64'))">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);RHINO_ARM64</DefineConstants>
+      </PropertyGroup>
+    </When>
+
+    <When Condition="$(Platform.Contains('x64'))">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);RHINO_X64</DefineConstants>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
   <ItemGroup>
-    <Compile Remove="Template\dist\**" />
-    <EmbeddedResource Remove="Template\dist\**" />
-    <None Remove="Template\dist\**" />
+    <None Remove="Templates\index.ts" />
+    <None Remove="Templates\package.json" />
+    <None Remove="Templates\tsconfig.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Template\index.d.ts" />
-    <None Remove="Template\index.ts" />
-    <None Remove="Template\package.json" />
-    <None Remove="Template\tsconfig.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Template\.vscode\launch.json">
+    <None Include="Templates\ts\.vscode\launch.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content> 
-    <Content Include="Template\index.ts">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Template\package.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Template\tsconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -48,33 +71,49 @@
     <PackageReference Include="System.CodeDom" Version="8.0.0" />
   </ItemGroup>
 
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <Reference Include="System.Windows.Forms" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
-    <PackageReference Include="System.Drawing.Common" Version="8.0.7" />
-    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
-    <PackageReference Include="Microsoft.WindowsDesktop.App.Ref" GeneratePathProperty="true" Version="8.0.0" ExcludeAssets="all" />
-    <Reference Include="$(PkgMicrosoft_WindowsDesktop_App_Ref)\ref\net8.0\System.Windows.Forms.dll">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
+  <Choose>
+    <When Condition="$(TargetFramework.Contains('net4'))">
+      <ItemGroup>
+        <Reference Include="System.Windows.Forms" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+        <PackageReference Include="System.Resources.Extensions" Version="7.0.0" />
+        <PackageReference Include="Microsoft.WindowsDesktop.App.Ref" GeneratePathProperty="true" Version="7.0.0" ExcludeAssets="all" />
+        <Reference Include="$(PkgMicrosoft_WindowsDesktop_App_Ref)\ref\net7.0\System.Windows.Forms.dll">
+          <Private>False</Private>
+        </Reference>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+  
   <ItemGroup>
-    <None Update="native\osx-universal\libnode.dylib">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="native\win-x64\libnode.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Template\types\component.d.ts">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="CodeGenerator\ComponentTypeGenerator.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ComponentTypeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Templates\node\index.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\node\package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\node\tsconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ts\index.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ts\package.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ts\tsconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ts\types\component.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
@@ -83,6 +122,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Bundler.cs">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Compile>
     <Compile Update="Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -96,38 +138,49 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Template\types\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Update="Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 
-  <!-- Remove generated files before building new ones -->
-  <Target Name="CleanTemplate" AfterTargets="CopyFilesToOutputDirectory">
-    <Message Text="Cleaning template folder" Importance="high" />
-    <RemoveDir Directories="$(OutDir)Template\dist" />
-    <Delete Files="$(OutDir)Template\index.js" />
-  </Target>
 
-  <!-- Create an initial dist file (dist/index.js) file so the component can run initially -->
-  <Target Name="CreateJavascriptTemplate" AfterTargets="CleanTemplate">
-    <Message Text="Creating initial dist of the index file." Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Template" Command="npm run build" />
+  <Target Name="NpmInstall" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Fetching NPM modules" Importance="high" />
+    <!-- Assumes a windows build machine-->
+    <Exec Condition="$(Platform) == 'win-x64'" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-win-x64" />
+    <Exec Condition="$(Platform) == 'mac-arm64'" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-mac-arm64" />
+    <Exec Condition="$(Platform) == 'mac-x64'" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-mac-x64" />
+  </Target>
+  
+  <Target Name="CreateNodeScripts" AfterTargets="NpmInstall">
+    <Message Text="TypeScript Compiling Templates/node" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Templates/node" Command="tsc" />
     <ItemGroup>
-      <FileWrites Include="$(OutDir)Template\dist\index.js" />
+      <RemoveTypeScript Include="$(OutDir)Templates/node/tsconfig.json" />
+      <RemoveTypeScript Include="$(OutDir)Templates/node/*.ts" />
+      <RemoveTypeScript Include="$(OutDir)Templates/node/*.d.ts" />
     </ItemGroup>
+    <Delete Files="@(RemoveTypeScript)" />
   </Target>
 
-  <!-- Generate a javascript template file (index.js) from the typescript file -->
-  <Target Name="CreateTemplateDistribution" AfterTargets="CreateJavascriptTemplate">
-    <Message Text="Creating javascript template index.js." Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Template" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir ." />
+  <Target Name="CreateInitialBundle" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Creating Templates/bundle/index.js" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="npx -y esbuild index.* --outdir=../bundle --platform=node --bundle --minify" />
+  </Target>
+
+  <Target Name="CreateJSTemplate" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Creating Template/js/*" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir ..\js" />
     <ItemGroup>
-      <FileWrites Include="$(OutDir)Template\index.js" />
+      <VSCodeFiles Include="$(OutDir)Templates/ts/.vscode/**" />
+    </ItemGroup>
+    <Copy SourceFiles="@(VSCodeFiles)" DestinationFolder="$(OutDir)Templates/js/.vscode/%(RecursiveDir)" />
+  </Target>
+
+  <Target Name="RegisterFileCleanUp" AfterTargets="CopyFilesToOutputDirectory;NpmInstall">
+    <ItemGroup>
+      <FileWrites Include="$(OutDir)Templates\**\*.*" />
     </ItemGroup>
   </Target>
 
