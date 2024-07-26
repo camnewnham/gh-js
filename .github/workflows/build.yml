@@ -32,9 +32,9 @@ jobs:
       - name: Package
         id: package
         run: |
-          cp "..\Plugin\bin\Mac\Release\net7.0\" "package\net7.0-macos" -r
-          cp "..\Plugin\bin\Windows\Release\net7.0\" "package\net7.0-windows" -r
-          cp "..\Plugin\bin\Windows\Release\net4.8\" "package\net4.8-windows" -r
+          cp "Plugin\bin\Mac\Release\net7.0\" "package\net7.0-macos" -r
+          cp "Plugin\bin\Windows\Release\net7.0\" "package\net7.0-windows" -r
+          cp "Plugin\bin\Windows\Release\net4.8\" "package\net4.8-windows" -r
           
           cd package
           ..\yak.exe build --platform any --version ${{ github.ref_name }}
