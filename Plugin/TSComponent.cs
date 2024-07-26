@@ -15,7 +15,7 @@ namespace JavascriptForGrasshopper
         public override GH_Exposure Exposure => GH_Exposure.secondary;
         public override Guid ComponentGuid => new Guid("A7887C6C-BC3D-45CD-90FA-609190F00DAA");
 
-        protected override Bitmap Icon => Resources.logo_typescript;
+        protected override Bitmap Icon => Resources.Icon_TS;
 
         public TSComponent() : base("TypeScript", "TS", "Write and execute typescript with NodeJS.", "Maths", "Script") { }
 
@@ -44,8 +44,10 @@ namespace JavascriptForGrasshopper
             document.UndoServer.PushUndoRecord(document.UndoUtil.CreateAddObjectEvent($"Swap {jsComponent.Name}", jsComponent));
 
             // Repair the undo record
-            Task.Run(() => {
-                Rhino.RhinoApp.InvokeOnUiThread((Action) (() => {
+            Task.Run(() =>
+            {
+                Rhino.RhinoApp.InvokeOnUiThread((Action)(() =>
+                {
                     if (document.UndoServer.FirstUndoName == $"Add {Name}")
                     {
                         document.UndoServer.RemoveRecord(document.UndoServer.UndoGuids[0]);

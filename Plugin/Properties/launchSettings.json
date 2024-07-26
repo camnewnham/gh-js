@@ -5,7 +5,7 @@
       "executablePath": "C:\\Program Files\\Rhino 8\\System\\Rhino.exe",
       "commandLineArgs": "/runscript=\"_Grasshopper\" /nosplash",
       "environmentVariables": {
-        "RHINO_PACKAGE_DIRS": "$(ProjectDir)\\bin\\win-x64\\Debug"
+        "RHINO_PACKAGE_DIRS": "$(ProjectDir)\\bin\\Windows\\Debug"
       }
     }
   }

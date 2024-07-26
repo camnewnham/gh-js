@@ -18,7 +18,8 @@ namespace JavascriptForGrasshopper
     {
         public override GH_Exposure Exposure => GH_Exposure.secondary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
-        protected override Bitmap Icon => IsTypescript ? Resources.logo_typescript : Resources.logo_javascript;
+
+        protected override Bitmap Icon => IsTypescript ? Resources.Icon_TS : Resources.Icon_JS;
         public bool IsTypescript { get; private set; } = false;
         public bool UseOutputParam { get; private set; } = true;
         public JSComponent() : base("JavaScript", "JS", "Write and execute JavaScript with NodeJS.", "Maths", "Script") { }

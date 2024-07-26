@@ -33,9 +33,16 @@
   </Choose>
 
   <ItemGroup>
+    <None Remove="Resources\logo_javascript.png" />
+    <None Remove="Resources\logo_typescript.png" />
     <None Remove="Templates\index.ts" />
     <None Remove="Templates\package.json" />
     <None Remove="Templates\tsconfig.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\logo_javascript.png" />
+    <EmbeddedResource Include="Resources\logo_typescript.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -115,23 +122,11 @@
     <Compile Update="Bundler.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
     <Compile Update="CodeGenerator\ComponentTypeGenerator.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>ComponentTypeGenerator.tt</DependentUpon>
     </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
 
 
