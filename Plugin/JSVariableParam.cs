@@ -138,28 +138,37 @@ namespace JavascriptForGrasshopper
 
         public override bool AppendMenuItems(ToolStripDropDown menu)
         {
-            void GenerateTypesOnMenuClose(object sender, EventArgs args)
+            bool compilationDataChanged = false;
+            bool typeMetadataChanged = false;
+
+            // Note: Actions that close the menu (ie. clicking a toggle) should call this directly.
+            // For text fields, this will be handled when the menu closes.
+            void HandleChanges()
             {
-                Owner.ExpireTypeDefinitions();
+                if (typeMetadataChanged)
+                {
+                    Owner?.OnTypeMetadataChanged(this);
+                    typeMetadataChanged = false;
+                }
+                if (compilationDataChanged)
+                {
+                    Owner?.OnParameterDataChanged(this);
+                    compilationDataChanged = false;
+                }
+
             }
+
+            menu.Closed += (obj, arg) =>
+            {
+                HandleChanges();
+            };
 
             ToolStripTextBox variableNameBox = Menu_AppendTextField(menu, VariableName, text =>
             {
+                compilationDataChanged = true;
+                typeMetadataChanged = true;
                 VariableName = text;
-                Owner.Attributes.ExpireLayout();
-
-                ClearRuntimeMessages();
-                if (!Owner.ValidateParams(out string err))
-                {
-                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, err);
-                }
-                else
-                {
-                    ExpireSolution(true);
-                }
-
-                menu.Closed -= GenerateTypesOnMenuClose;
-                menu.Closed += GenerateTypesOnMenuClose;
+                Owner?.Attributes.ExpireLayout();
                 Instances.RedrawCanvas();
             });
 
@@ -168,15 +177,15 @@ namespace JavascriptForGrasshopper
             ToolStripTextBox nameBox = Menu_AppendTextItem(Menu_AppendItem(menu, "Name (for humans, optional):").DropDown, PrettyName, null, (obj, arg) =>
             {
                 PrettyName = obj.Text;
-                menu.Closed -= GenerateTypesOnMenuClose;
-                menu.Closed += GenerateTypesOnMenuClose;
+                typeMetadataChanged = true;
+                Owner?.Attributes.ExpireLayout();
+                Instances.RedrawCanvas();
             }, true, -1, true);
 
             ToolStripTextBox tipBox = Menu_AppendTextItem(Menu_AppendItem(menu, "Tooltip (optional):").DropDown, ToolTip, null, (obj, arg) =>
             {
                 ToolTip = obj.Text;
-                menu.Closed -= GenerateTypesOnMenuClose;
-                menu.Closed += GenerateTypesOnMenuClose;
+                typeMetadataChanged = true;
             }, true, -1, true);
             tipBox.ToolTipText = "This is .Description property of input parameter";
             tipBox.TextBox.AcceptsReturn = true;
@@ -203,24 +212,22 @@ namespace JavascriptForGrasshopper
                 {
                     if (Access == GH_ParamAccess.item)
                     {
-                        return;
+                        Access = GH_ParamAccess.item;
+                        typeMetadataChanged = true;
+                        compilationDataChanged = true;
+                        HandleChanges();
                     }
-
-                    Access = GH_ParamAccess.item;
-                    Owner?.ExpireTypeDefinitions();
-                    Owner?.ExpireSolution(true);
                 }, true, Access == GH_ParamAccess.item);
 
                 Menu_AppendItem(menu, "List Access", (obj, arg) =>
                 {
-                    if (Access == GH_ParamAccess.list)
+                    if (Access != GH_ParamAccess.list)
                     {
-                        return;
+                        Access = GH_ParamAccess.list;
+                        typeMetadataChanged = true;
+                        compilationDataChanged = true;
+                        HandleChanges();
                     }
-
-                    Access = GH_ParamAccess.list;
-                    Owner?.ExpireTypeDefinitions();
-                    Owner?.ExpireSolution(true);
                 }, true, Access == GH_ParamAccess.list);
             }
 
@@ -229,8 +236,8 @@ namespace JavascriptForGrasshopper
             Menu_AppendItem(menu, "Optional", (obj, arg) =>
             {
                 Optional = !Optional;
-                Owner?.ExpireTypeDefinitions();
-                ExpireSolution(true);
+                typeMetadataChanged = true;
+                HandleChanges();
             }, true, Optional);
 
 
@@ -253,7 +260,8 @@ namespace JavascriptForGrasshopper
                         }
 
                         TypeHint = (JSTypeHint)(obj as ToolStripMenuItem).Tag;
-                        Owner?.ExpireTypeDefinitions();
+                        typeMetadataChanged = true;
+                        HandleChanges();
                     };
                     typeHintMenu.DropDownItems.Add(item);
                 }

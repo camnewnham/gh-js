@@ -14,7 +14,7 @@ using System.Windows.Forms;
 
 namespace JavascriptForGrasshopper
 {
-    public partial class JSComponent : GH_Component, IGH_VariableParameterComponent
+    public partial class JSComponent : GH_Component, IGH_VariableParameterComponent, IGH_InstanceGuidDependent
     {
         public override GH_Exposure Exposure => GH_Exposure.secondary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
@@ -88,41 +88,6 @@ namespace JavascriptForGrasshopper
             Params.OnParametersChanged();
         }
 
-        protected override void BeforeSolveInstance()
-        {
-            base.BeforeSolveInstance();
-            if (!ValidateParams(out string reason))
-            {
-                throw new InvalidDataException(reason);
-            }
-        }
-
-        /// <summary>
-        /// Validates parameter inputs and outputs for syntax and uniqueness.
-        /// </summary>
-        /// <returns>True if the parameters are all valid.</returns>
-        public bool ValidateParams(out string reason)
-        {
-            HashSet<string> inputVariables = new HashSet<string>();
-            HashSet<string> outputVariables = new HashSet<string>();
-            foreach (JSVariableParam param in Params.Input.Concat(Params.Output.Where(p => p is JSVariableParam)))
-            {
-                if (!TypescriptSupport.IsValidVariableName(param.VariableName))
-                {
-                    reason = $"\"{param.VariableName}\" is not a valid variable name";
-                    return false;
-                }
-                if ((param.Kind == GH_ParamKind.input && !inputVariables.Add(param.VariableName)) ||
-                    (param.Kind == GH_ParamKind.output && !outputVariables.Add(param.VariableName)))
-                {
-                    reason = $"Variable \"{param.VariableName}\" is already in use.";
-                    return false;
-                }
-            }
-            reason = null;
-            return true;
-        }
-
         /// <summary>
         /// Utility for adding runtime messages from nodejs
         /// </summary>
@@ -142,8 +107,27 @@ namespace JavascriptForGrasshopper
             }
         }
 
+        protected override void BeforeSolveInstance()
+        {
+            base.BeforeSolveInstance();
+            if (m_hasCompileErrors)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Syntax error in source code.");
+            }
+
+            if (m_hasInvalidParams && !ValidateParams(out string err))
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, err);
+            }
+        }
+
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            if (m_hasInvalidParams || m_hasCompileErrors)
+            {
+                return;
+            }
+
             Debug.Assert(JSBundlePath != null, "Bundle path was not set");
             Debug.Assert(File.Exists(JSBundlePath), "Bundle file not found.");
 
@@ -264,6 +248,66 @@ namespace JavascriptForGrasshopper
             }
         }
 
+        /// <summary>
+        /// Called when a parameter changes in such a way that would invalidate the bundle. 
+        /// Includes:
+        /// - Variable name change
+        /// - Input type change (from item to list)
+        /// </summary>
+        internal void OnParameterDataChanged(JSVariableParam param)
+        {
+            ClearRuntimeMessages();
+            if (!ValidateParams(out string err))
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, err);
+                Instances.RedrawCanvas();
+            }
+            else
+            {
+                ExpireSolution(true);
+            }
+        }
+
+        /// <summary>
+        /// Changed when metadata that affects types (but not necessarily compilation) has changed. 
+        /// </summary>
+        /// <param name="param"></param>
+        internal void OnTypeMetadataChanged(JSVariableParam param)
+        {
+            ExpireTypeDefinitions();
+            Attributes.ExpireLayout();
+            Instances.RedrawCanvas();
+        }
+
+        /// <summary>
+        /// Validates parameter inputs and outputs for syntax and uniqueness.
+        /// </summary>
+        /// <returns>True if the parameters are all valid.</returns>
+        public bool ValidateParams(out string reason)
+        {
+            reason = null;
+            HashSet<string> inputVariables = new HashSet<string>();
+            HashSet<string> outputVariables = new HashSet<string>();
+            foreach (JSVariableParam param in Params.Input.Concat(Params.Output.Where(p => p is JSVariableParam)))
+            {
+                if (!TypescriptSupport.IsValidVariableName(param.VariableName))
+                {
+                    reason = $"\"{param.VariableName}\" is not a valid variable name";
+                    break;
+                }
+                if ((param.Kind == GH_ParamKind.input && !inputVariables.Add(param.VariableName)) ||
+                    (param.Kind == GH_ParamKind.output && !outputVariables.Add(param.VariableName)))
+                {
+                    reason = $"Variable \"{param.VariableName}\" is already in use.";
+                    break;
+                }
+            }
+
+            m_hasInvalidParams = reason != null;
+
+            return !m_hasInvalidParams;
+        }
+
         public override void AppendAdditionalMenuItems(ToolStripDropDown menu)
         {
             base.AppendAdditionalMenuItems(menu);
@@ -297,6 +341,9 @@ namespace JavascriptForGrasshopper
 
         }
 
+        /// <summary>
+        /// Launches the code editor with the current script
+        /// </summary>
         public void LaunchCodeEditor()
         {
             string srcFolder = GetOrCreateSourceCode();
@@ -337,6 +384,25 @@ namespace JavascriptForGrasshopper
         void IGH_VariableParameterComponent.VariableParameterMaintenance()
         {
             UpdateTypeDefinitions();
+        }
+
+        void IGH_InstanceGuidDependent.InstanceGuidsChanged(SortedDictionary<Guid, Guid> map)
+        {
+            foreach (KeyValuePair<Guid, Guid> kvp in map)
+            {
+                if (kvp.Key == InstanceGuid || kvp.Value == InstanceGuid)
+                {
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// If the ID of this bundle has changed, 
+        /// </summary>
+        private void ChangeId()
+        {
+
         }
     }
 }

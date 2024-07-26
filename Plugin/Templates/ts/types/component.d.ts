@@ -10,11 +10,11 @@ namespace Component {
     /**
      * The first value to sum
      */
-    a: number;
+    a?: number;
     /**
      * The second value to sum
      */
-    b: number;
+    b?: number;
   }
 
   /**
@@ -24,6 +24,6 @@ namespace Component {
     /**
      * The result of a + b
      */
-    x: number;
+    x?: number;
   }
 }

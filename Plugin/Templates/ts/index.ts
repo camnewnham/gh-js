@@ -5,7 +5,8 @@
  */
 
 export async function runScript(inputs: Component.Inputs): Promise<Component.Outputs> {
+    const sum: number = (inputs.a ?? 0) + (inputs.b ?? 0);
   return {
-    x: inputs.a + inputs.b
+      x: sum
   };
 }

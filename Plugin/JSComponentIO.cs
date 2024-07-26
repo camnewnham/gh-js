@@ -1,4 +1,5 @@
 ﻿using GH_IO.Serialization;
+using Grasshopper;
 using Grasshopper.Kernel;
 using System;
 using System.Collections.Generic;
@@ -86,6 +87,16 @@ namespace JavascriptForGrasshopper
         private Guid m_bundleId;
 
         /// <summary>
+        /// If true, the bundle was not created due to errors in the source code.
+        /// </summary>
+        private bool m_hasCompileErrors = false;
+
+        /// <summary>
+        /// If true, the component has variable names which break compilation.
+        /// </summary>
+        private bool m_hasInvalidParams = false;
+
+        /// <summary>
         /// If we have source code extracted, monitor for bundle changes
         /// </summary>
         private void WatchForFileChanges()
@@ -104,6 +115,7 @@ namespace JavascriptForGrasshopper
                 };
                 m_bundler.BundleChanged += (arg) =>
                 {
+                    m_hasCompileErrors = false;
                     m_isModifiedSinceLastWrite = true;
                     Node.ClearEnvironment();
                     if (!Locked)
@@ -116,11 +128,14 @@ namespace JavascriptForGrasshopper
                 };
                 m_bundler.BundleFailed += (args) =>
                 {
+                    m_hasCompileErrors = true;
                     ClearRuntimeMessages();
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Failed to bundle source code.");
                     foreach (KeyValuePair<NodeConsole.MessageLevel, string[]> err in args.Errors)
                     {
                         AddRuntimeMessage(err.Key, err.Value);
                     }
+                    Instances.RedrawCanvas();
                 };
             }
         }
@@ -152,8 +167,6 @@ namespace JavascriptForGrasshopper
             }
             m_isModifiedSinceLastWrite = false;
 
-            writer.SetGuid("js_bundle_id", m_bundleId);
-
             Debug.Assert(JSBundleCode != null, "No bundle code to store!");
             writer.SetString("js_bundle_code", JSBundleCode);
 
@@ -166,13 +179,13 @@ namespace JavascriptForGrasshopper
 
             writer.SetBoolean("js_use_output_param", UseOutputParam);
 
+            writer.SetBoolean("js_has_compile_errors", m_hasCompileErrors);
+
             return base.Write(writer);
         }
 
         public override bool Read(GH_IReader reader)
         {
-            m_bundleId = reader.GetGuid("js_bundle_id");
-
             JSBundleCode = reader.GetString("js_bundle_code");
             if (reader.ItemExists("js_source_zip"))
             {
@@ -181,14 +194,26 @@ namespace JavascriptForGrasshopper
 
             IsTypescript = reader.GetBoolean("js_is_typescript");
             UseOutputParam = reader.GetBoolean("js_use_output_param");
+            m_hasCompileErrors = reader.GetBoolean("js_has_compile_errors");
             return base.Read(reader);
         }
 
         public override void AddedToDocument(GH_Document document)
         {
             base.AddedToDocument(document);
-            EnsureBundle();
+            InitializeBundle();
             WatchForFileChanges();
+
+            if (ValidateParams(out string errReason))
+            {
+                m_hasInvalidParams = true;
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, errReason);
+            }
+
+            if (m_hasCompileErrors)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Failed to bundle source code. Please check the source code for syntax errors.");
+            }
         }
 
         public override void RemovedFromDocument(GH_Document document)
@@ -198,22 +223,24 @@ namespace JavascriptForGrasshopper
         }
 
         /// <summary>
-        /// Ensures the js bundle exists
+        /// Generates a new ID for the bundle.  
+        /// Loads the cached bundle to a file, or loads the template bundle if it does not exist.
         /// </summary>
-        private void EnsureBundle()
+        private void InitializeBundle()
         {
-            if (m_bundleId == default) // New component
+            m_bundleId = Guid.NewGuid();
+
+            if (JSBundleCode != null) // Restore from component
             {
-                m_bundleId = Guid.NewGuid();
+                Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
+                File.WriteAllText(JSBundlePath, JSBundleCode);
+            }
+            else // New component
+            {
                 string templateBundle = Path.Combine(TemplatesFolder, "bundle", "index.js");
                 Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
                 File.Copy(templateBundle, JSBundlePath);
                 m_isModifiedSinceLastWrite = true;
-            }
-            else // Restore from component
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
-                File.WriteAllText(JSBundlePath, JSBundleCode);
             }
 
             Debug.Assert(File.Exists(JSBundlePath), "Bundle file does not exist!");

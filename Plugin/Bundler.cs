@@ -77,6 +77,14 @@ namespace JavascriptForGrasshopper
             m_bundleWatcher.Created += OnBundleChanged;
         }
 
+        /// <summary>
+        /// Immediately requests a bundling operation.
+        /// </summary>
+        public void Bundle()
+        {
+            OnSourceChanged(null, null);
+        }
+
         private void OnBundleChanged(object sender, FileSystemEventArgs e)
         {
             Rhino.RhinoApp.InvokeOnUiThread((Action)(() =>
@@ -124,7 +132,10 @@ namespace JavascriptForGrasshopper
             }
             if (!await Node.Bundle(EntryPoint, BundlePath, ErrorCallback, true))
             {
-                BundleFailed?.Invoke(new BundleFailedEventArgs(errors));
+                Rhino.RhinoApp.InvokeOnUiThread((Action)(() =>
+                {
+                    BundleFailed?.Invoke(new BundleFailedEventArgs(errors));
+                }));
             }
 
         }

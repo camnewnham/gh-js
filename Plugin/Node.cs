@@ -72,7 +72,7 @@ namespace JavascriptForGrasshopper
             {
                 if (Rhino.Runtime.HostUtils.RunningOnWindows)
                 {
-                    return Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "win32-x64", "bin", "esbuild.exe"); ;
+                    return Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "win32-x64", "esbuild.exe"); ;
                 }
                 else if (Rhino.Runtime.HostUtils.RunningOnOSX)
                 {

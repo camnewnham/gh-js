@@ -14,7 +14,7 @@ namespace Component
   /**
   * Inputs to the Grasshopper component. 
   */
-  interface Inputs {
+  type Inputs = {
 <#
     var defs = Inputs;
     foreach (var def in defs)
@@ -33,7 +33,7 @@ namespace Component
   /**
   * Outputs from the Grasshopper component. 
   */
-  interface Outputs {
+  type Outputs = {
 <#
     defs = Outputs;
     foreach (var def in defs)
