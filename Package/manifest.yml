@@ -1,0 +1,9 @@
+---
+name: JavaScript
+version: $version
+authors:
+- Cam Newnham
+description: JavaScript and TypeScript for Grasshopper
+url: https://github.com/camnewnham/gh-js
+keywords: ["js", "ts", "javascript", "typescript", "code", "script", "ide", "editor", "node", "nodejs"]
+icon: icon.png

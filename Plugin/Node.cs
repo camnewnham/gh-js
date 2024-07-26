@@ -33,28 +33,63 @@ namespace JavascriptForGrasshopper
             {
                 if (m_platform == null)
                 {
-                    string path =
-#if RHINO_WIN
-                        Path.Combine(PluginFolder, "native", "win-x64", "libnode.dll");
-#else
-                        Path.Combine(PluginFolder, "native", "osx-universal", "libnode.dylib");
-#endif
-
-                    m_platform = new NodejsPlatform(path);
-
-                    string esbuildBinaryPath =
-#if RHINO_MAC && RHINO_ARM64
-                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "darwin-arm64", "bin", "esbuild");
-#elif RHINO_MAC && RHINO_X64
-                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "darwin-x64", "bin", "esbuild");
-#elif RHINO_WIN && RHINO_X64
-                        Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "win32-x64", "bin", "esbuild.exe");
-#else
-#error Unsupported ESBuild platform
-#endif
-                    System.Environment.SetEnvironmentVariable("ESBUILD_BINARY_PATH", esbuildBinaryPath);
+                    System.Environment.SetEnvironmentVariable("ESBUILD_BINARY_PATH", ESBinaryPath);
+                    m_platform = new NodejsPlatform(LibNodePath);
                 }
                 return m_platform;
+            }
+        }
+
+        /// <summary>
+        /// The path to the libnode binary
+        /// </summary>
+        private static string LibNodePath
+        {
+            get
+            {
+                if (Rhino.Runtime.HostUtils.RunningOnWindows)
+                {
+                    return Path.Combine(PluginFolder, "native", "win-x64", "libnode.dll"); ;
+                }
+                else if (Rhino.Runtime.HostUtils.RunningOnOSX)
+                {
+                    return Path.Combine(PluginFolder, "native", "osx-universal", "libnode.dylib"); ;
+                }
+                else
+                {
+                    throw new NotSupportedException("Only Rhino on Windows and OSX are supported.");
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// The path to the esbuild binary based on OS and architecture
+        /// </summary>
+        private static string ESBinaryPath
+        {
+            get
+            {
+                if (Rhino.Runtime.HostUtils.RunningOnWindows)
+                {
+                    return Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "win32-x64", "bin", "esbuild.exe"); ;
+                }
+                else if (Rhino.Runtime.HostUtils.RunningOnOSX)
+                {
+                    switch (System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture)
+                    {
+                        case System.Runtime.InteropServices.Architecture.Arm64:
+                            return Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "darwin-arm64", "bin", "esbuild");
+                        case System.Runtime.InteropServices.Architecture.X64:
+                            return Path.Combine(ModuleRootFolder, "node_modules", "@esbuild", "darwin-x64", "bin", "esbuild");
+                        default:
+                            throw new NotSupportedException($"Unsupported processor architecture: {System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}");
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException("Only Rhino on Windows and OSX are supported.");
+                }
             }
         }
 

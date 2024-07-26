@@ -2,22 +2,15 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build-plugin-netcore-mac-x64",
-      "command": "dotnet build ${workspaceFolder}/Plugin/Plugin.csproj -f net8.0 -p:Platform=mac-x64",
+      "label": "build-plugin-netcore-mac",
+      "command": "dotnet build ${workspaceFolder}/Plugin/Plugin.csproj -f net8.0 -p:Platform=Mac -p:Configuration=Debug",
       "type": "shell",
       "problemMatcher": ["$msCompile"],
       "group": "build"
     },
     {
-      "label": "build-plugin-netcore-mac-arm64",
-      "command": "dotnet build ${workspaceFolder}/Plugin/Plugin.csproj -f net8.0 -p:Platform=mac-arm64",
-      "type": "shell",
-      "problemMatcher": ["$msCompile"],
-      "group": "build"
-    },
-    {
-      "label": "build-plugin-netcore-win-x64",
-      "command": "dotnet build ${workspaceFolder}/Plugin/Plugin.csproj -f net8.0 -p:Platform=win-x64",
+      "label": "build-plugin-netcore-win",
+      "command": "dotnet build ${workspaceFolder}/Plugin/Plugin.csproj -f net8.0 -p:Platform=Windows -p:Configuration=Debug",
       "type": "shell",
       "problemMatcher": ["$msCompile"],
       "group": "build"

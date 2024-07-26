@@ -7,26 +7,20 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Plugin", "Plugin\Plugin.csp
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|mac-arm64 = Debug|mac-arm64
-		Debug|mac-x64 = Debug|mac-x64
-		Debug|win-x64 = Debug|win-x64
-		Release|mac-arm64 = Release|mac-arm64
-		Release|mac-x64 = Release|mac-x64
-		Release|win-x64 = Release|win-x64
+		Debug|Mac = Debug|Mac
+		Debug|Windows = Debug|Windows
+		Release|Mac = Release|Mac
+		Release|Windows = Release|Windows
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|mac-arm64.ActiveCfg = Debug|mac-arm64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|mac-arm64.Build.0 = Debug|mac-arm64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|mac-x64.ActiveCfg = Debug|mac-x64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|mac-x64.Build.0 = Debug|mac-x64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|win-x64.ActiveCfg = Debug|win-x64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|win-x64.Build.0 = Debug|win-x64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|mac-arm64.ActiveCfg = Release|mac-arm64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|mac-arm64.Build.0 = Release|mac-arm64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|mac-x64.ActiveCfg = Release|mac-x64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|mac-x64.Build.0 = Release|mac-x64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|win-x64.ActiveCfg = Release|win-x64
-		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|win-x64.Build.0 = Release|win-x64
+		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|Mac.ActiveCfg = Debug|Mac
+		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|Mac.Build.0 = Debug|Mac
+		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|Windows.ActiveCfg = Debug|Windows
+		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Debug|Windows.Build.0 = Debug|Windows
+		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|Mac.ActiveCfg = Release|Mac
+		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|Mac.Build.0 = Release|Mac
+		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|Windows.ActiveCfg = Release|Windows
+		{127A23D8-29B0-4A31-B3D1-16C93E5C52B8}.Release|Windows.Build.0 = Release|Windows
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

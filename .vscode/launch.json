@@ -2,45 +2,31 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run Rhino 8 (Mac-x64)",
+      "name": "Run Rhino 8 (Mac)",
       "type": "coreclr",
       "request": "launch",
-      "preLaunchTask": "build-plugin-netcore-mac-x64",
+      "preLaunchTask": "build-plugin-netcore-mac",
       "program": "/Applications/Rhino 8.app/Contents/MacOS/Rhinoceros",
       "args": "-runscript=\"_Grasshopper\"",
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
       "console": "internalConsole",
       "env": {
-        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/Plugin/bin/mac-x64/Debug/"
-      }
-    },
-    {
-      "name": "Run Rhino 8 (Mac-ARM64)",
-      "type": "coreclr",
-      "request": "launch",
-      "preLaunchTask": "build-plugin-netcore-mac-arm64",
-      "program": "/Applications/Rhino 8.app/Contents/MacOS/Rhinoceros",
-      "args": "-runscript=\"_Grasshopper\"",
-      "cwd": "${workspaceFolder}",
-      "stopAtEntry": false,
-      "console": "internalConsole",
-      "env": {
-        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/Plugin/bin/mac-arm64/Debug/"
+        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/Plugin/bin/Mac/Debug/"
       }
     },
     {
       "name": "Run Rhino 8 (Windows)",
       "type": "coreclr",
       "request": "launch",
-      "preLaunchTask": "build-plugin-netcore-win-x64",
+      "preLaunchTask": "build-plugin-netcore-win",
       "program": "${env:ProgramFiles}/Rhino 8/System/Rhino.exe",
       "args": "/nosplash /notemplate /runscript=\"_Grasshopper\"",
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
       "console": "internalConsole",
       "env": {
-        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/Plugin/bin/win-x64/Debug/"
+        "RHINO_PACKAGE_DIRS": "${workspaceFolder}/Plugin/bin/Windows/Debug/"
       }
     }
   ],

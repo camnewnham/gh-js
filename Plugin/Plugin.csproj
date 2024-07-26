@@ -10,15 +10,12 @@
     <AssemblyName>JavascriptForGrasshopper</AssemblyName>
     <RootNamespace>JavascriptForGrasshopper</RootNamespace>
     <LangVersion>9</LangVersion>
-    <Platforms>mac-x64;mac-arm64;win-x64</Platforms>
+    <Platforms>Mac;Windows</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <Choose>
-    <When Condition="$(Platform.Contains('mac'))">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);RHINO_MAC</DefineConstants>
-      </PropertyGroup>
+    <When Condition="$(Platform.ToLower().Contains('mac'))">
       <ItemGroup>
         <None Update="native\osx-universal\libnode.dylib">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -26,29 +23,12 @@
       </ItemGroup>
     </When>
     
-    <When Condition="$(Platform.Contains('win'))">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);RHINO_WIN</DefineConstants>
-      </PropertyGroup>
+    <When Condition="$(Platform.ToLower().Contains('win'))">
       <ItemGroup>
         <None Update="native\win-x64\libnode.dll">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
       </ItemGroup>
-    </When>
-  </Choose>
-
-  <Choose>
-    <When Condition="$(Platform.Contains('arm64'))">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);RHINO_ARM64</DefineConstants>
-      </PropertyGroup>
-    </When>
-
-    <When Condition="$(Platform.Contains('x64'))">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);RHINO_X64</DefineConstants>
-      </PropertyGroup>
     </When>
   </Choose>
 
@@ -93,6 +73,12 @@
     <None Update="CodeGenerator\ComponentTypeGenerator.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ComponentTypeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="yak.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="manifest.yml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Templates\node\index.ts">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -147,10 +133,9 @@
 
   <Target Name="NpmInstall" AfterTargets="CopyFilesToOutputDirectory">
     <Message Text="Fetching NPM modules" Importance="high" />
-    <!-- Assumes a windows build machine-->
-    <Exec Condition="$(Platform) == 'win-x64'" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-win-x64" />
-    <Exec Condition="$(Platform) == 'mac-arm64'" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-mac-arm64" />
-    <Exec Condition="$(Platform) == 'mac-x64'" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-mac-x64" />
+    <Exec Condition="$(Platform.ToLower().Contains('win'))" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-win-x64" />
+    <Exec Condition="$(Platform.ToLower().Contains('mac'))" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-mac-arm64" />
+    <Exec Condition="$(Platform.ToLower().Contains('mac'))" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-mac-x64" />
   </Target>
   
   <Target Name="CreateNodeScripts" AfterTargets="NpmInstall">
