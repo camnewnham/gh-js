@@ -133,9 +133,10 @@ namespace JavascriptForGrasshopper
 
             ManualResetEventSlim mre = new ManualResetEventSlim(false);
 
+            List<string> consoleOutput = new List<string>();
+
             Node.Environment.RunAsync(async () =>
             {
-                List<string> consoleOutput = new List<string>();
                 using (new NodeConsole.ConsoleToRuntimeMessage((level, msgs) =>
                 {
                     consoleOutput.AddRange(msgs);
@@ -164,11 +165,6 @@ namespace JavascriptForGrasshopper
                         }
 
                         ProcessOutputParameters(DA, result);
-
-                        if (UseOutputParam && consoleOutput.Count > 0)
-                        {
-                            DA.SetDataList(0, consoleOutput);
-                        }
                     }
                     catch (JSException jsex)
                     {
@@ -182,6 +178,11 @@ namespace JavascriptForGrasshopper
             });
 
             mre.Wait();
+
+            if (UseOutputParam && consoleOutput.Count > 0)
+            {
+                DA.SetDataList(0, consoleOutput);
+            }
         }
 
         /// <summary>
@@ -240,10 +241,20 @@ namespace JavascriptForGrasshopper
                     }
                     DA.SetDataList(p, result);
                 }
+                else if (obj.IsExternal())
+                {
+                    DA.SetData(p, obj.GetValueExternal());
+                }
+                else if (obj.IsObject())
+                {
+                    if (obj.RemoveWrap(out object dotnetData))
+                    {
+                        DA.SetData(p, dotnetData);
+                    }
+                }
                 else
                 {
-                    object val = obj.GetValueExternalOrPrimitive();
-                    DA.SetData(p, val);
+                    DA.SetData(p, obj.GetValueExternalOrPrimitive());
                 }
             }
         }
