@@ -141,7 +141,7 @@ namespace JavascriptForGrasshopper
                         JSValue bundleFunction = await Environment.ImportAsync(bundleScript, "bundle", true);
                         bool isFunc = bundleFunction.IsFunction();
                         Debug.Assert(bundleFunction.IsFunction(), "Bundle was not a function!");
-                        JSValue buildResult = bundleFunction.Call(thisArg: default, entryPoint, outFile, true);
+                        JSValue buildResult = bundleFunction.Call(thisArg: default, entryPoint, outFile, minify);
 
                         if (buildResult.IsPromise())
                         {
@@ -165,7 +165,6 @@ namespace JavascriptForGrasshopper
                 }
             });
             return success;
-
         }
 
         /// <summary>

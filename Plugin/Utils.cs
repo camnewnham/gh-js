@@ -130,5 +130,36 @@ namespace JavascriptForGrasshopper
                 });
             }
         }
+
+        /// <summary>
+        /// Attempts to run npm install, in case the user is using npm packages.
+        /// </summary>
+        /// <param name="workingDir">The working directory to run in.</param>
+        /// <returns>True if npm ran and returned exit code 0</returns>
+        internal static bool RunNpmInstall(string workingDir)
+        {
+            try
+            {
+                Process process = Process.Start(new ProcessStartInfo()
+                {
+                    WorkingDirectory = workingDir,
+                    UseShellExecute = true,
+                    FileName = "npm",
+                    Arguments = "install",
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true
+                });
+
+                process.WaitForExit();
+                Debug.WriteLine($"npm install exit with code {process.ExitCode}");
+                return process.ExitCode == 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Failed to run npm install: " + ex.Message);
+                return false;
+            }
+
+        }
     }
 }

@@ -87,6 +87,11 @@ namespace JavascriptForGrasshopper
         /// <returns>True if it was a monitored file</returns>
         private bool IsMonitored(string path)
         {
+            if (path.Contains("node_modules"))
+            {
+                return false;
+            }
+
             foreach (string suffix in MonitoredSuffixes)
             {
                 if (path.EndsWith(suffix))
@@ -112,7 +117,6 @@ namespace JavascriptForGrasshopper
                 }));
                 return;
             }
-
 
             if (e.FullPath.EndsWith("ts"))
             {

@@ -160,6 +160,7 @@
       <VSCodeFiles Include="$(OutDir)Templates/ts/.vscode/**" />
     </ItemGroup>
     <Copy SourceFiles="@(VSCodeFiles)" DestinationFolder="$(OutDir)Templates/js/.vscode/%(RecursiveDir)" />
+    <Copy SourceFiles="$(OutDir)Templates/ts/package.json" DestinationFolder="$(OutDir)Templates/js/" />
   </Target>
   
   

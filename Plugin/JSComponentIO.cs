@@ -32,7 +32,7 @@ namespace JavascriptForGrasshopper
         /// </summary>
         private static string[] m_ignoreFolders = new string[]
         {
-            "bin", "obj", "node_modules"
+            "bin", "obj", "node_modules", "dist"
         };
 
         /// <summary>
@@ -239,7 +239,7 @@ namespace JavascriptForGrasshopper
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
                 File.WriteAllText(JSBundlePath, JSBundleCode);
-                Debug.WriteLine($"Wrote JS bundle to {JSBundleCode}");
+                Debug.WriteLine($"Wrote JS cached bundle to {JSBundlePath}");
             }
             else // New component
             {
@@ -247,7 +247,7 @@ namespace JavascriptForGrasshopper
                 Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
                 File.Copy(templateBundle, JSBundlePath);
                 m_isModifiedSinceLastWrite = true;
-                Debug.WriteLine($"Wrote JS bundle to {JSBundlePath}");
+                Debug.WriteLine($"Wrote JS template bundle to {JSBundlePath}");
             }
 
             Debug.Assert(File.Exists(JSBundlePath), "Bundle file does not exist!");
@@ -272,6 +272,7 @@ namespace JavascriptForGrasshopper
                 UpdateTypeDefinitions();
                 m_hasExtractedSource = true;
                 Debug.WriteLine($"Extracted zip source to {JSSourcePath}");
+                Utils.RunNpmInstall(JSSourcePath);
             }
             else // Use template source
             {
