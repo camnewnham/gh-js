@@ -35,11 +35,14 @@ export async function runScript(inputs: Component.Inputs): Promise<Component.Out
 Use the right click menu to add additional type information which will be used by your linter.
 
 ![image](https://github.com/user-attachments/assets/feea9e03-40b7-4a4f-a20c-65d2e4f99105)
+
 ![image](https://github.com/user-attachments/assets/f9e1b257-7da2-4058-8a68-07d6a4194a99)
 
 ### Hot Reload
 
 Every time you save your code files, your component will automatically execute with the updated code.
+
+![hot_reload](https://github.com/user-attachments/assets/f3afcc83-acf3-4083-a1e7-085fb26e42c2)
 
 ### Console Output
 
@@ -47,14 +50,17 @@ Every time you save your code files, your component will automatically execute w
 
 ![image](https://github.com/user-attachments/assets/be06ac32-b958-4dbd-9469-a5520a0f0aef)
 
-
 ### Debugging
 
 Hit breakpoints, catch exceptions and step through your code by attaching a debugger. This can be Visual Studio Code, Google Chrome, or anything else that supports it.
 
+![image](https://github.com/user-attachments/assets/42c2e53f-55a3-4351-abb7-c0a64ab339b5)
+
 ### Bundling
 
-Your runtime code is automatically bundled and stored in the component. This means that you can `npm install` to your hearts content.
+Your runtime code is automatically bundled, minified and stored in the Grasshopper component. This means that you can `npm install` to your hearts content.
+
+![image](https://github.com/user-attachments/assets/88250f92-2283-4744-ae7d-fa38d31325c0)
 
 No dependencies (aside from this plugin) are required to execute the bundled component, so you can distribute it without conflicts or additional install steps.
 
@@ -71,5 +77,8 @@ The execution environment is NodeJS, meaning you have access to a wide range of 
 ### Edit in your IDE
 
 You can edit the component code in any IDE you like. We'll try to launch Visual Studio Code with a clean workspace folder, but otherwise we'll just open the script with whatever your system to defaults to. Hot reload will work either way.
+
+![image](https://github.com/user-attachments/assets/4d70079e-d1ff-4e21-b04a-c5076d3550dc)
+
 
 If you'd like to see "official" support for another, please create an issue.
