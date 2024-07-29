@@ -53,8 +53,11 @@
 
   <ItemGroup>
 
-    <PackageReference Include="Microsoft.JavaScript.NodeApi" Version="0.7.31" />
+    <PackageReference Include="Microsoft.JavaScript.NodeApi" Version="0.7.34" />
+
+    <PackageReference Include="Microsoft.JavaScript.NodeApi.DotNetHost" Version="0.7.34" />
     <PackageReference Include="System.CodeDom" Version="8.0.0" />
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 
   <Choose>

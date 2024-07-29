@@ -1,5 +1,7 @@
 ﻿using Microsoft.JavaScript.NodeApi;
+using Microsoft.JavaScript.NodeApi.DotNetHost;
 using System;
+using System.Reflection;
 
 namespace JavascriptForGrasshopper
 {
@@ -43,17 +45,23 @@ namespace JavascriptForGrasshopper
             }
             else if (type.IsValueType)
             {
-                // TODO: Should this be marshalled differently?
-                return JSValue.CreateExternal(o);
+                return MarshallGeneric(o);
             }
             else if (o is object)
             {
-                return JSValue.CreateExternal(o);
+                return MarshallGeneric(o);
             }
             else
             {
                 throw new InvalidCastException($"Unable to convert from input type to {nameof(JSValue)}");
             }
+        }
+
+        private static JSValue MarshallGeneric(object obj)
+        {
+            MethodInfo method = typeof(JSMarshaller).GetMethod(nameof(JSMarshaller.Current.ToJS));
+            MethodInfo generic = method.MakeGenericMethod(obj.GetType());
+            return (JSValue)generic.Invoke(JSMarshaller.Current, new object[] { obj });
         }
     }
 }

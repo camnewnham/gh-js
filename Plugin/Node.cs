@@ -1,9 +1,12 @@
 ﻿using Microsoft.JavaScript.NodeApi;
+using Microsoft.JavaScript.NodeApi.DotNetHost;
 using Microsoft.JavaScript.NodeApi.Runtime;
+using Rhino;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace JavascriptForGrasshopper
@@ -110,6 +113,7 @@ namespace JavascriptForGrasshopper
                     m_environment = Platform.CreateEnvironment(ModuleRootFolder);
 
                     NodeConsole.SetupConsole(m_environment);
+                    LoadDefaultDotNetTypes(m_environment);
 
                     if (m_debuggerEnabled)
                     {
@@ -118,6 +122,38 @@ namespace JavascriptForGrasshopper
                 }
                 return m_environment;
             }
+        }
+
+        /// <summary>
+        /// Loads dotnet types into the "dotnet" global JS object.
+        /// </summary>
+        /// <param name="env"></param>
+        private static void LoadDefaultDotNetTypes(NodejsEnvironment env)
+        {
+            ManualResetEventSlim mre = new ManualResetEventSlim();
+            env.RunAsync(async () =>
+            {
+                try
+                {
+                    JSObject managedTypes = (JSObject)JSValue.CreateObject();
+                    JSValue.Global.SetProperty("dotnet", managedTypes);
+                    typeof(JSMarshaller)
+                    .GetField("s_current", BindingFlags.Static | BindingFlags.NonPublic)
+                    .SetValue(null, new JSMarshaller()
+                    {
+                        AutoCamelCase = false
+                    });
+
+                    TypeExporter te = new TypeExporter(JSMarshaller.Current, managedTypes);
+                    te.ExportAssemblyTypes(typeof(RhinoDoc).Assembly);
+                    // te.ExportType(typeof(Mesh)); // TODO: What other types do we need to load?
+                }
+                finally
+                {
+                    mre.Set();
+                }
+            });
+            mre.Wait();
         }
 
         /// <summary>
@@ -140,7 +176,7 @@ namespace JavascriptForGrasshopper
                         string bundleScript = Path.Combine(ModuleRootFolder, "index.js");
                         JSValue bundleFunction = await Environment.ImportAsync(bundleScript, "bundle", true);
                         bool isFunc = bundleFunction.IsFunction();
-                        Debug.Assert(bundleFunction.IsFunction(), "Bundle was not a function!");
+                        Debug.Assert(bundleFunction.IsFunction(), "bundle() was not a function!");
                         JSValue buildResult = bundleFunction.Call(thisArg: default, entryPoint, outFile, minify);
 
                         if (buildResult.IsPromise())
