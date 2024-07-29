@@ -39,7 +39,7 @@ namespace JavascriptForGrasshopper
         /// If the bundle has been written to file, it should be here. 
         /// This is the file that gets executed.
         /// </summary>
-        public string JSBundlePath => Path.Combine(WorkingDir, "bundles", m_bundleId.ToString() + ".js");
+        public string JSBundlePath => Path.Combine(JSSourcePath, "dist", "index.js");
 
         /// <summary>
         /// If the source code has been extracted, it should be here.
@@ -95,6 +95,11 @@ namespace JavascriptForGrasshopper
         /// If true, the component has variable names which break compilation.
         /// </summary>
         private bool m_hasInvalidParams = false;
+
+        /// <summary>
+        /// Whether the source code has been extracted.
+        /// </summary>
+        private bool m_hasExtractedSource = false;
 
         /// <summary>
         /// If we have source code extracted, monitor for bundle changes
@@ -234,13 +239,15 @@ namespace JavascriptForGrasshopper
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
                 File.WriteAllText(JSBundlePath, JSBundleCode);
+                Debug.WriteLine($"Wrote JS bundle to {JSBundleCode}");
             }
             else // New component
             {
-                string templateBundle = Path.Combine(TemplatesFolder, "bundle", "index.js");
+                string templateBundle = Path.Combine(TemplatesFolder, IsTypescript ? "ts" : "js", "dist", "index.js");
                 Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
                 File.Copy(templateBundle, JSBundlePath);
                 m_isModifiedSinceLastWrite = true;
+                Debug.WriteLine($"Wrote JS bundle to {JSBundlePath}");
             }
 
             Debug.Assert(File.Exists(JSBundlePath), "Bundle file does not exist!");
@@ -254,7 +261,7 @@ namespace JavascriptForGrasshopper
         /// <returns>The path to the folder containing the source code.</returns>
         private string GetOrCreateSourceCode()
         {
-            if (Directory.Exists(JSSourcePath)) // Use existing source
+            if (m_hasExtractedSource && Directory.Exists(JSSourcePath)) // Use existing source
             {
                 // Source directory exists.
             }
@@ -263,12 +270,16 @@ namespace JavascriptForGrasshopper
                 Directory.CreateDirectory(JSSourcePath);
                 Utils.UnzipFolder(JSSourceZipContents, JSSourcePath);
                 UpdateTypeDefinitions();
+                m_hasExtractedSource = true;
+                Debug.WriteLine($"Extracted zip source to {JSSourcePath}");
             }
             else // Use template source
             {
                 Directory.CreateDirectory(JSSourcePath);
                 Utils.CopyDirectoryRecursive(Path.Combine(TemplatesFolder, IsTypescript ? "ts" : "js"), JSSourcePath);
                 UpdateTypeDefinitions();
+                m_hasExtractedSource = true;
+                Debug.WriteLine($"Extracted template to {JSSourcePath}");
             }
             WatchForFileChanges();
             return JSSourcePath;

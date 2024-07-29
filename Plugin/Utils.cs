@@ -77,7 +77,7 @@ namespace JavascriptForGrasshopper
             foreach (FileInfo file in dir.GetFiles())
             {
                 string targetFilePath = Path.Combine(destinationDir, file.Name);
-                file.CopyTo(targetFilePath);
+                file.CopyTo(targetFilePath, true);
             }
 
             foreach (DirectoryInfo subDir in dirs)

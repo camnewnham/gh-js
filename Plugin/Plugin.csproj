@@ -148,9 +148,9 @@
     <Delete Files="@(RemoveTypeScript)" />
   </Target>
 
-  <Target Name="CreateInitialBundle" AfterTargets="CopyFilesToOutputDirectory">
-    <Message Text="Creating Templates/bundle/index.js" Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="npx -y esbuild index.* --outdir=../bundle --platform=node --bundle --minify" />
+  <Target Name="CreateTSBundle" AfterTargets="CopyFilesToOutputDirectory">
+    <Message Text="Creating Templates/ts/dist/index.js" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="npx -y esbuild index.* --outdir=dist --platform=node --bundle --minify" />
   </Target>
 
   <Target Name="CreateJSTemplate" AfterTargets="CopyFilesToOutputDirectory">
@@ -160,6 +160,12 @@
       <VSCodeFiles Include="$(OutDir)Templates/ts/.vscode/**" />
     </ItemGroup>
     <Copy SourceFiles="@(VSCodeFiles)" DestinationFolder="$(OutDir)Templates/js/.vscode/%(RecursiveDir)" />
+  </Target>
+  
+  
+  <Target Name="CreateJSBundle" AfterTargets="CreateJSTemplate">
+    <Message Text="Creating Templates/ts/dist/index.js" Importance="high" />
+    <Exec WorkingDirectory="$(OutDir)Templates/js" Command="npx -y esbuild index.* --outdir=dist --platform=node --bundle --minify" />
   </Target>
 
   <Target Name="RegisterFileCleanUp" AfterTargets="CopyFilesToOutputDirectory;NpmInstall">

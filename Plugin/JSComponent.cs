@@ -14,7 +14,7 @@ using System.Windows.Forms;
 
 namespace JavascriptForGrasshopper
 {
-    public partial class JSComponent : GH_Component, IGH_VariableParameterComponent, IGH_InstanceGuidDependent
+    public partial class JSComponent : GH_Component, IGH_VariableParameterComponent
     {
         public override GH_Exposure Exposure => GH_Exposure.secondary;
         public override Guid ComponentGuid => new Guid("440e1113-51b0-46a9-be9b-a7d025e6e312");
@@ -148,7 +148,7 @@ namespace JavascriptForGrasshopper
                     try
                     {
                         JSValue runScript = await Node.Environment.ImportAsync(JSBundlePath, "runScript", true);
-
+                        Debug.Assert(runScript.IsFunction(), "runScript was not a function");
                         JSValue inputs = GetInputParameters(DA);
                         JSValue result = runScript.Call(thisArg: default, inputs);
 
@@ -384,25 +384,6 @@ namespace JavascriptForGrasshopper
         void IGH_VariableParameterComponent.VariableParameterMaintenance()
         {
             UpdateTypeDefinitions();
-        }
-
-        void IGH_InstanceGuidDependent.InstanceGuidsChanged(SortedDictionary<Guid, Guid> map)
-        {
-            foreach (KeyValuePair<Guid, Guid> kvp in map)
-            {
-                if (kvp.Key == InstanceGuid || kvp.Value == InstanceGuid)
-                {
-
-                }
-            }
-        }
-
-        /// <summary>
-        /// If the ID of this bundle has changed, 
-        /// </summary>
-        private void ChangeId()
-        {
-
         }
     }
 }

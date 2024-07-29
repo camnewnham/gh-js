@@ -29,11 +29,6 @@ namespace JavascriptForGrasshopper
         private FileSystemWatcher m_sourceWatcher;
 
         /// <summary>
-        /// Watcher for the bundled code. 
-        /// </summary>
-        private FileSystemWatcher m_bundleWatcher;
-
-        /// <summary>
         /// The entry point to the bundle code, i.e. index.js
         /// </summary>
         public readonly string EntryPoint;
@@ -67,14 +62,6 @@ namespace JavascriptForGrasshopper
             };
             m_sourceWatcher.Changed += OnSourceChanged;
             m_sourceWatcher.Created += OnSourceChanged;
-
-            m_bundleWatcher = new FileSystemWatcher(Path.GetDirectoryName(bundlePath), Path.GetFileName(bundlePath))
-            {
-                IncludeSubdirectories = false,
-                EnableRaisingEvents = true
-            };
-            m_bundleWatcher.Changed += OnBundleChanged;
-            m_bundleWatcher.Created += OnBundleChanged;
         }
 
         /// <summary>
@@ -117,6 +104,16 @@ namespace JavascriptForGrasshopper
                 return;
             }
 
+            if (e.FullPath == BundlePath)
+            {
+                Rhino.RhinoApp.InvokeOnUiThread((Action)(() =>
+                {
+                    BundleChanged?.Invoke(BundlePath);
+                }));
+                return;
+            }
+
+
             if (e.FullPath.EndsWith("ts"))
             {
                 Rhino.RhinoApp.InvokeOnUiThread((Action)(() =>
@@ -144,8 +141,6 @@ namespace JavascriptForGrasshopper
         {
             m_sourceWatcher?.Dispose();
             m_sourceWatcher = null;
-            m_bundleWatcher?.Dispose();
-            m_bundleWatcher = null;
         }
     }
 }
