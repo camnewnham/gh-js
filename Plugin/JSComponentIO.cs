@@ -23,6 +23,11 @@ namespace JavascriptForGrasshopper
         internal static readonly string TemplatesFolder = Path.Combine(Path.GetDirectoryName(Assembly.GetAssembly(typeof(JSComponent)).Location), "Templates");
 
         /// <summary>
+        /// Path to shared project, including type definitions.
+        /// </summary>
+        public static string TypesPath => Path.Combine(WorkingDir, "types");
+
+        /// <summary>
         /// Watcher for file changes.
         /// </summary>
         private Bundler m_bundler;
@@ -186,6 +191,8 @@ namespace JavascriptForGrasshopper
 
             writer.SetBoolean("js_has_compile_errors", m_hasCompileErrors);
 
+            writer.SetString("plugin_version", typeof(JSComponent).Assembly.GetName().Version.ToString());
+
             return base.Write(writer);
         }
 
@@ -284,7 +291,6 @@ namespace JavascriptForGrasshopper
             }
             WatchForFileChanges();
             return JSSourcePath;
-
         }
 
         /// <summary>
@@ -305,11 +311,12 @@ namespace JavascriptForGrasshopper
                 return;
             }
 
-
             if (!Directory.Exists(JSSourcePath))
             {
                 return;
             }
+
+            EnsureTypesDirectory();
 
             string typesFile = Path.Combine(JSSourcePath, "types", "component.d.ts");
 
@@ -325,5 +332,12 @@ namespace JavascriptForGrasshopper
             m_isModifiedSinceLastWrite = true;
         }
 
+        private static void EnsureTypesDirectory()
+        {
+            if (Directory.Exists(TypesPath)) return;
+
+            Directory.CreateDirectory(TypesPath);
+            Utils.CopyDirectoryRecursive(Path.Combine(TemplatesFolder, "types"), TypesPath);
+        }
     }
 }

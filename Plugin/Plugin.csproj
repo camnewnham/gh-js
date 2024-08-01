@@ -46,16 +46,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Templates\ts\.vscode\launch.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-
     <PackageReference Include="Microsoft.JavaScript.NodeApi" Version="0.7.34" />
-
     <PackageReference Include="Microsoft.JavaScript.NodeApi.DotNetHost" Version="0.7.34" />
+    <!-- Exclude build assets as we will invoke the generation command manually -->
+    <PackageReference Include="Microsoft.JavaScript.NodeApi.Generator" Version="0.7.34" ExcludeAssets="build" GeneratePathProperty="true" />
     <PackageReference Include="System.CodeDom" Version="8.0.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
@@ -63,16 +57,15 @@
   <Choose>
     <When Condition="$(TargetFramework.Contains('net4'))">
       <ItemGroup>
-        <PackageReference Include="Grasshopper" Version="6.35.21222.17001" IncludeAssets="compile;build" />
+        <PackageReference Include="Grasshopper" Version="6.35.21222.17001" />
         <PackageReference Include="RhinoCommon" Version="6.35.21222.17001" />
         <Reference Include="System.Windows.Forms" />
       </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="Grasshopper" Version="8.1.23325.13001" IncludeAssets="compile;build" />
+        <PackageReference Include="Grasshopper" Version="8.1.23325.13001" />
         <PackageReference Include="RhinoCommon" Version="8.1.23325.13001" />
-
         <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
         <PackageReference Include="System.Resources.Extensions" Version="7.0.0" />
         <PackageReference Include="Microsoft.WindowsDesktop.App.Ref" GeneratePathProperty="true" Version="7.0.0" ExcludeAssets="all" />
@@ -82,11 +75,35 @@
       </ItemGroup>
     </Otherwise>
   </Choose>
-  
+
   <ItemGroup>
     <None Update="CodeGenerator\ComponentTypeGenerator.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>ComponentTypeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Templates\ts\types\component.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\types\Eto.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\types\GH_IO.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\types\GH_Util.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\types\Grasshopper.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\types\index.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\types\Rhino.UI.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\types\RhinoCommon.d.ts">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="yak.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -112,7 +129,7 @@
     <None Update="Templates\ts\tsconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Templates\ts\types\component.d.ts">
+    <None Include="Templates\ts\.vscode\launch.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -122,9 +139,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Bundler.cs">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Compile>
     <Compile Update="CodeGenerator\ComponentTypeGenerator.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -132,7 +146,7 @@
     </Compile>
   </ItemGroup>
 
-
+  <!-- Run NPM install for the platforms we need-->
   <Target Name="NpmInstall" AfterTargets="CopyFilesToOutputDirectory">
     <Message Text="Fetching NPM modules" Importance="high" />
     <Exec Condition="$(Platform.ToLower().Contains('win'))" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-win-x64" />
@@ -140,6 +154,7 @@
     <Exec Condition="$(Platform.ToLower().Contains('mac'))" WorkingDirectory="$(OutDir)Templates\node" Command="npm run setup-mac-x64" />
   </Target>
   
+  <!-- Compile the node scripts from TypeScript -->
   <Target Name="CreateNodeScripts" AfterTargets="NpmInstall">
     <Message Text="TypeScript Compiling Templates/node" Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Templates/node" Command="tsc" />
@@ -151,11 +166,13 @@
     <Delete Files="@(RemoveTypeScript)" />
   </Target>
 
+  <!-- Create the initial js bundle from the typescript template code -->
   <Target Name="CreateTSBundle" AfterTargets="CopyFilesToOutputDirectory">
     <Message Text="Creating Templates/ts/dist/index.js" Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="npx -y esbuild index.* --outdir=dist --platform=node --bundle --minify" />
   </Target>
 
+  <!-- Create a javascript template from the typescript template -->
   <Target Name="CreateJSTemplate" AfterTargets="CopyFilesToOutputDirectory">
     <Message Text="Creating Template/js/*" Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir ..\js" />
@@ -166,16 +183,79 @@
     <Copy SourceFiles="$(OutDir)Templates/ts/package.json" DestinationFolder="$(OutDir)Templates/js/" />
   </Target>
   
-  
+  <!-- Create the initial js bundle from the javascript template code -->
   <Target Name="CreateJSBundle" AfterTargets="CreateJSTemplate">
     <Message Text="Creating Templates/ts/dist/index.js" Importance="high" />
     <Exec WorkingDirectory="$(OutDir)Templates/js" Command="npx -y esbuild index.* --outdir=dist --platform=node --bundle --minify" />
   </Target>
 
+  <!-- Ensure our template directory gets cleaned each build -->
   <Target Name="RegisterFileCleanUp" AfterTargets="CopyFilesToOutputDirectory;NpmInstall">
     <ItemGroup>
       <FileWrites Include="$(OutDir)Templates\**\*.*" />
     </ItemGroup>
+  </Target>
+  
+  <!-- 
+  Generate type definitions for dotnet libraries
+  These require Rhino to be installed for assemblies to resolve 
+  -->
+  <Target Name="GenerateTypeDefinitions" AfterTargets="CopyFilesToOutputDirectory" Condition="$(GenerateTypes) != ''">
+    <Message Text="Generating types $(TargetFramework)" />
+    <!-- Create a response file to contain the dependencies we need -->
+    <PropertyGroup>
+      <NodeApiGeneratorAssemblyName>Microsoft.JavaScript.NodeApi.Generator</NodeApiGeneratorAssemblyName>
+      <NodeApiGeneratorResponseFile>$(ProjectDir)$(IntermediateOutputPath)$(NodeApiGeneratorAssemblyName).rsp</NodeApiGeneratorResponseFile>
+      <NodeApiJSModuleType>esm</NodeApiJSModuleType>
+      <_NodeApiGeneratorTargetingPacks>@(TargetingPack, '%3B')</_NodeApiGeneratorTargetingPacks>
+      <!--
+      With .NET Framework 4.x, invoke the generator executable; otherwise use the dotnet CLI (which will check the runtimeconfig.json).
+      The TS generator tool selection is based on the current project target framework, NOT the current MSBuild .NET version.
+      -->
+      <NodeApiGeneratorDirectory Condition="$(TargetFramework.StartsWith('net4'))">$(PkgMicrosoft_JavaScript_NodeApi_Generator)\lib\net472\</NodeApiGeneratorDirectory>
+      <NodeApiGeneratorDirectory Condition="!$(TargetFramework.StartsWith('net4'))">$(PkgMicrosoft_JavaScript_NodeApi_Generator)\lib\net6.0\</NodeApiGeneratorDirectory>
+      <NodeApiGeneratorCommand Condition="!$(TargetFramework.StartsWith('net4'))">dotnet "$(NodeApiGeneratorDirectory)$(NodeApiGeneratorAssemblyName).dll"</NodeApiGeneratorCommand>
+      <NodeApiGeneratorCommand Condition="$(TargetFramework.StartsWith('net4'))">"$(NodeApiGeneratorDirectory)$(NodeApiGeneratorAssemblyName).exe"</NodeApiGeneratorCommand>
+
+      <NodeApiTypesOutputFolder>$(TargetDir)types\</NodeApiTypesOutputFolder>
+    </PropertyGroup>
+
+    <ItemGroup Condition="!$(TargetFramework.Contains('net4'))">
+      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\System\netcore\RhinoCommon.dll" TypeFileName="$(NodeApiTypesOutputFolder)RhinoCommon.d.ts" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(TargetFramework.Contains('net4'))">
+      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\System\RhinoCommon.dll" TypeFileName="$(NodeApiTypesOutputFolder)RhinoCommon.d.ts" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\Plug-ins\Grasshopper\Grasshopper.dll" TypeFileName="$(NodeApiTypesOutputFolder)Grasshopper.d.ts" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\System\Rhino.UI.dll" TypeFileName="$(NodeApiTypesOutputFolder)Rhino.UI.d.ts" />
+      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\System\Eto.dll" TypeFileName="$(NodeApiTypesOutputFolder)Eto.d.ts" />
+      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\Plug-ins\Grasshopper\GH_IO.dll" TypeFileName="$(NodeApiTypesOutputFolder)GH_IO.d.ts" />
+      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\Plug-ins\Grasshopper\GH_Util.dll" TypeFileName="$(NodeApiTypesOutputFolder)GH_Util.d.ts" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <PrimaryAssemblyStr>@(NodeApiPrimaryAssemblies, '%3B')</PrimaryAssemblyStr>
+      <TypeDefStr>@(NodeApiPrimaryAssemblies->'%(TypeFileName)', '%3B')</TypeDefStr>
+      <RefAssemblyStr>@(NodeApiReferenceAssemblies, '%3B')</RefAssemblyStr>
+    </PropertyGroup>
+    
+    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--assembly &quot;$(PrimaryAssemblyStr)&quot;" Overwrite="true" />
+    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--reference &quot;$(RefAssemblyStr)&quot;" />
+    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--packs &quot;$(_NodeApiGeneratorTargetingPacks)&quot;" />
+    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--typedefs &quot;$(TypeDefStr)&quot;" />
+    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--module $(NodeApiJSModuleType)" />
+    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--framework $(TargetFramework)" />
+    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--nowarn" />
+
+    <MakeDir Directories="$(NodeApiTypesOutputFolder)" />
+    <!-- Run the generator using args from the response file. Note the '@' indicates the response file NOT an MSBuild item-list. -->
+    <Exec WorkingDirectory="$(NodeApiGeneratorDirectory)" Command="$(NodeApiGeneratorCommand) &quot;@$(NodeApiGeneratorResponseFile)&quot;" ConsoleToMSBuild="true" />
   </Target>
 
 </Project>
