@@ -48,8 +48,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.JavaScript.NodeApi" Version="0.7.34" />
     <PackageReference Include="Microsoft.JavaScript.NodeApi.DotNetHost" Version="0.7.34" />
-    <!-- Exclude build assets as we will invoke the generation command manually -->
-    <PackageReference Include="Microsoft.JavaScript.NodeApi.Generator" Version="0.7.34" ExcludeAssets="build" GeneratePathProperty="true" />
     <PackageReference Include="System.CodeDom" Version="8.0.0" />
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
@@ -195,67 +193,4 @@
       <FileWrites Include="$(OutDir)Templates\**\*.*" />
     </ItemGroup>
   </Target>
-  
-  <!-- 
-  Generate type definitions for dotnet libraries
-  These require Rhino to be installed for assemblies to resolve 
-  -->
-  <Target Name="GenerateTypeDefinitions" AfterTargets="CopyFilesToOutputDirectory" Condition="$(GenerateTypes) != ''">
-    <Message Text="Generating types $(TargetFramework)" />
-    <!-- Create a response file to contain the dependencies we need -->
-    <PropertyGroup>
-      <NodeApiGeneratorAssemblyName>Microsoft.JavaScript.NodeApi.Generator</NodeApiGeneratorAssemblyName>
-      <NodeApiGeneratorResponseFile>$(ProjectDir)$(IntermediateOutputPath)$(NodeApiGeneratorAssemblyName).rsp</NodeApiGeneratorResponseFile>
-      <NodeApiJSModuleType>esm</NodeApiJSModuleType>
-      <_NodeApiGeneratorTargetingPacks>@(TargetingPack, '%3B')</_NodeApiGeneratorTargetingPacks>
-      <!--
-      With .NET Framework 4.x, invoke the generator executable; otherwise use the dotnet CLI (which will check the runtimeconfig.json).
-      The TS generator tool selection is based on the current project target framework, NOT the current MSBuild .NET version.
-      -->
-      <NodeApiGeneratorDirectory Condition="$(TargetFramework.StartsWith('net4'))">$(PkgMicrosoft_JavaScript_NodeApi_Generator)\lib\net472\</NodeApiGeneratorDirectory>
-      <NodeApiGeneratorDirectory Condition="!$(TargetFramework.StartsWith('net4'))">$(PkgMicrosoft_JavaScript_NodeApi_Generator)\lib\net6.0\</NodeApiGeneratorDirectory>
-      <NodeApiGeneratorCommand Condition="!$(TargetFramework.StartsWith('net4'))">dotnet "$(NodeApiGeneratorDirectory)$(NodeApiGeneratorAssemblyName).dll"</NodeApiGeneratorCommand>
-      <NodeApiGeneratorCommand Condition="$(TargetFramework.StartsWith('net4'))">"$(NodeApiGeneratorDirectory)$(NodeApiGeneratorAssemblyName).exe"</NodeApiGeneratorCommand>
-
-      <NodeApiTypesOutputFolder>$(TargetDir)types\</NodeApiTypesOutputFolder>
-    </PropertyGroup>
-
-    <ItemGroup Condition="!$(TargetFramework.Contains('net4'))">
-      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\System\netcore\RhinoCommon.dll" TypeFileName="$(NodeApiTypesOutputFolder)RhinoCommon.d.ts" />
-    </ItemGroup>
-
-    <ItemGroup Condition="$(TargetFramework.Contains('net4'))">
-      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\System\RhinoCommon.dll" TypeFileName="$(NodeApiTypesOutputFolder)RhinoCommon.d.ts" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\Plug-ins\Grasshopper\Grasshopper.dll" TypeFileName="$(NodeApiTypesOutputFolder)Grasshopper.d.ts" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\System\Rhino.UI.dll" TypeFileName="$(NodeApiTypesOutputFolder)Rhino.UI.d.ts" />
-      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\System\Eto.dll" TypeFileName="$(NodeApiTypesOutputFolder)Eto.d.ts" />
-      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\Plug-ins\Grasshopper\GH_IO.dll" TypeFileName="$(NodeApiTypesOutputFolder)GH_IO.d.ts" />
-      <NodeApiPrimaryAssemblies Include="C:\Program Files\Rhino 8\Plug-ins\Grasshopper\GH_Util.dll" TypeFileName="$(NodeApiTypesOutputFolder)GH_Util.d.ts" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <PrimaryAssemblyStr>@(NodeApiPrimaryAssemblies, '%3B')</PrimaryAssemblyStr>
-      <TypeDefStr>@(NodeApiPrimaryAssemblies->'%(TypeFileName)', '%3B')</TypeDefStr>
-      <RefAssemblyStr>@(NodeApiReferenceAssemblies, '%3B')</RefAssemblyStr>
-    </PropertyGroup>
-    
-    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--assembly &quot;$(PrimaryAssemblyStr)&quot;" Overwrite="true" />
-    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--reference &quot;$(RefAssemblyStr)&quot;" />
-    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--packs &quot;$(_NodeApiGeneratorTargetingPacks)&quot;" />
-    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--typedefs &quot;$(TypeDefStr)&quot;" />
-    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--module $(NodeApiJSModuleType)" />
-    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--framework $(TargetFramework)" />
-    <WriteLinesToFile File="$(NodeApiGeneratorResponseFile)" Lines="--nowarn" />
-
-    <MakeDir Directories="$(NodeApiTypesOutputFolder)" />
-    <!-- Run the generator using args from the response file. Note the '@' indicates the response file NOT an MSBuild item-list. -->
-    <Exec WorkingDirectory="$(NodeApiGeneratorDirectory)" Command="$(NodeApiGeneratorCommand) &quot;@$(NodeApiGeneratorResponseFile)&quot;" ConsoleToMSBuild="true" />
-  </Target>
-
 </Project>
