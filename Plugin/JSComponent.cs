@@ -41,6 +41,11 @@ namespace JavascriptForGrasshopper
             "javascript", "js", "typescript", "ts", "nodejs", "node", "script", "execute", "run", "code", "vs", "vsc"
         };
 
+        /// <summary>
+        /// Reference to a JS object provided to the script as the "context" object.
+        /// </summary>
+        private JSReference m_contextObj;
+
         public override IEnumerable<string> Keywords => m_keywords;
 
         public override void CreateAttributes()
@@ -121,6 +126,21 @@ namespace JavascriptForGrasshopper
             {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, err);
             }
+
+            if (m_hasCompileErrors || m_hasInvalidParams) return;
+
+            Node.Environment.Run(() =>
+            {
+                m_contextObj = CreateContextObject();
+            });
+        }
+
+        protected override void AfterSolveInstance()
+        {
+            base.AfterSolveInstance();
+
+            m_contextObj?.Dispose();
+            m_contextObj = null;
         }
 
         protected override void SolveInstance(IGH_DataAccess DA)
@@ -153,7 +173,7 @@ namespace JavascriptForGrasshopper
                         JSValue runScript = await Node.Environment.ImportAsync(JSBundlePath, "runScript", true);
                         Debug.Assert(runScript.IsFunction(), "runScript was not a function");
                         JSValue inputs = GetInputParameters(DA);
-                        JSValue result = runScript.Call(thisArg: default, inputs);
+                        JSValue result = runScript.Call(thisArg: default, inputs, m_contextObj.GetValue());
 
                         if (!runScript.IsFunction())
                         {
@@ -208,6 +228,23 @@ namespace JavascriptForGrasshopper
         }
 
         /// <summary>
+        /// Creates a context object containing metadata that can be used in the script component. 
+        /// This object should be created in <see cref="BeforeSolveInstance"/> and disposed in <see cref="AfterSolveInstance"/>
+        /// </summary>
+        /// <returns>A context object</returns>
+        private JSReference CreateContextObject()
+        {
+            JSValue context = JSValue.CreateObject();
+            context.SetProperty("RhinoDocument", Converter.ToJS(Rhino.RhinoDoc.ActiveDoc));
+            context.SetProperty("GrasshopperDocument", Converter.ToJS(OnPingDocument()));
+            context.SetProperty("Component", Converter.ToJS(this));
+            if (!JSReference.TryCreateReference(context, false, out JSReference res)) {
+                throw new Exception("Failed to create component context object.");
+            }
+            return res;
+        }
+
+        /// <summary>
         /// Parses the output data and marshalls to the DataAccess
         /// </summary>
         /// <param name="DA">The data access</param>
@@ -237,7 +274,7 @@ namespace JavascriptForGrasshopper
                 else
                 {
                     var val = Converter.FromJS(obj);
-                    if (val is IEnumerable)
+                    if (val is IList)
                     {
                         DA.SetDataList(p, val as IEnumerable);
                     }
@@ -291,7 +328,7 @@ namespace JavascriptForGrasshopper
             HashSet<string> outputVariables = new HashSet<string>();
             foreach (JSVariableParam param in Params.Input.Concat(Params.Output.Where(p => p is JSVariableParam)))
             {
-                if (!TypescriptSupport.IsValidVariableName(param.VariableName))
+                if (!Utils.IsValidVariableName(param.VariableName))
                 {
                     reason = $"\"{param.VariableName}\" is not a valid variable name";
                     break;

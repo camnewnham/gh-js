@@ -4,7 +4,7 @@
  * @returns An object with keys matching the outputs from the Grasshopper component
  */
 
-export async function runScript(inputs: Component.Inputs): Promise<Component.Outputs> {
+export async function runScript(inputs: Inputs, context: Context): Promise<Outputs> {
     const sum: number = (inputs.a ?? 0) + (inputs.b ?? 0);
   return {
       x: sum
