@@ -152,22 +152,7 @@ namespace JavascriptForGrasshopper
                     m_exportedTypes = new HashSet<Type>();
                     m_typeExporter = new TypeExporter(JSMarshaller.Current, managedTypes);
                     m_typeExporter.ExportAssemblyTypes(typeof(RhinoDoc).Assembly);
-
-                    /*
-                    foreach (var type in typeof(Rhino.RhinoDoc).Assembly.DefinedTypes) 
-                    {
-                        try
-                        {
-                            m_typeExporter.ExportType(type);
-                            Debug.WriteLine("Exported type: " + type.FullName);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.WriteLine($"{type.FullName} is not supported: " + e.Message);
-                        }
-                    }
-                    */
-                    
+                    m_typeExporter.ExportAssemblyTypes(typeof(Grasshopper.Kernel.GH_Document).Assembly);
                 }
                 finally
                 {
