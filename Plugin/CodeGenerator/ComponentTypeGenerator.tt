@@ -20,7 +20,7 @@ foreach (var def in defs)
    * @name <#= def.Name #>
    * @description <#= def.Description #>
    */
-<#= def.VariableName #><#=def.Optional ? "?" : ""#>: <#= def.Type #>; 
+  <#= def.VariableName #><#=def.Optional ? "?" : ""#>: <#= def.Type #>; 
 <#
 }
 #>
@@ -39,7 +39,7 @@ foreach (var def in defs)
    * @name <#= def.Name #>
    * @description <#= def.Description #>
    */
-<#= def.VariableName #><#=def.Optional ? "?" : ""#>: <#= def.Type #>; 
+  <#= def.VariableName #><#=def.Optional ? "?" : ""#>: <#= def.Type #>; 
 <#
 }
 #>

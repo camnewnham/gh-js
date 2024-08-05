@@ -55,7 +55,7 @@ foreach (var def in defs)
             
             #line default
             #line hidden
-            this.Write("\r\n   */\r\n");
+            this.Write("\r\n   */\r\n  ");
             
             #line 23 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.VariableName));
@@ -109,7 +109,7 @@ foreach (var def in defs)
             
             #line default
             #line hidden
-            this.Write("\r\n   */\r\n");
+            this.Write("\r\n   */\r\n  ");
             
             #line 42 "C:\Users\CameronNewnham\Desktop\gh-js\Plugin\CodeGenerator\ComponentTypeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(def.VariableName));
