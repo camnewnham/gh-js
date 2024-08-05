@@ -1,6 +1,7 @@
 ﻿/**
  * Executes within the context of the Grasshopper component.
  * @param inputs An object with keys matching the inputs to the Grasshopper component
+ * @param context The context in which the Grasshopper component is executed
  * @returns An object with keys matching the outputs from the Grasshopper component
  */
 
