@@ -91,8 +91,7 @@ namespace JavascriptForGrasshopper
                     return false;
                 }
 
-                object scriptVar = obj.ScriptVariable();
-                value = Converter.JSValueFromObject(scriptVar);
+                value = Converter.ToJS(obj.ScriptVariable());
             }
             else if (Access == GH_ParamAccess.list)
             {
@@ -104,7 +103,7 @@ namespace JavascriptForGrasshopper
                 }
                 foreach (IGH_Goo itm in goos)
                 {
-                    value.Items.Add(Converter.JSValueFromObject(itm.ScriptVariable()));
+                    value.Items.Add(Converter.ToJS(itm.ScriptVariable()));
                 }
             }
             else

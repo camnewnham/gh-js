@@ -3,8 +3,10 @@ using Microsoft.JavaScript.NodeApi.DotNetHost;
 using Microsoft.JavaScript.NodeApi.Runtime;
 using Rhino;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -124,6 +126,9 @@ namespace JavascriptForGrasshopper
             }
         }
 
+        private static HashSet<Type> m_exportedTypes;
+        private static TypeExporter m_typeExporter;
+
         /// <summary>
         /// Loads dotnet types into the "dotnet" global JS object.
         /// </summary>
@@ -144,9 +149,25 @@ namespace JavascriptForGrasshopper
                         AutoCamelCase = false
                     });
 
-                    TypeExporter te = new TypeExporter(JSMarshaller.Current, managedTypes);
-                    te.ExportAssemblyTypes(typeof(RhinoDoc).Assembly);
-                    // te.ExportType(typeof(Mesh)); // TODO: What other types do we need to load?
+                    m_exportedTypes = new HashSet<Type>();
+                    m_typeExporter = new TypeExporter(JSMarshaller.Current, managedTypes);
+                    m_typeExporter.ExportAssemblyTypes(typeof(RhinoDoc).Assembly);
+
+                    /*
+                    foreach (var type in typeof(Rhino.RhinoDoc).Assembly.DefinedTypes) 
+                    {
+                        try
+                        {
+                            m_typeExporter.ExportType(type);
+                            Debug.WriteLine("Exported type: " + type.FullName);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.WriteLine($"{type.FullName} is not supported: " + e.Message);
+                        }
+                    }
+                    */
+                    
                 }
                 finally
                 {
@@ -154,6 +175,22 @@ namespace JavascriptForGrasshopper
                 }
             });
             mre.Wait();
+        }
+        
+        internal static void EnsureType(Type type)
+        {
+            if (m_exportedTypes.Add(type))
+            {
+                try
+                {
+                    m_typeExporter.ExportType(type);
+                    Debug.WriteLine("Exported type: " + type.FullName);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine($"{type.FullName} is not supported: " + e.Message);
+                }
+            }
         }
 
         /// <summary>
@@ -208,6 +245,8 @@ namespace JavascriptForGrasshopper
         /// </summary>
         public static void ClearEnvironment()
         {
+            m_exportedTypes = null;
+            m_typeExporter = null;
             m_environment?.Dispose();
             m_environment = null;
         }

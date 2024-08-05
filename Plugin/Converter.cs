@@ -1,13 +1,14 @@
 ﻿using Microsoft.JavaScript.NodeApi;
 using Microsoft.JavaScript.NodeApi.DotNetHost;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace JavascriptForGrasshopper
 {
     internal static class Converter
     {
-        public static JSValue JSValueFromObject(object o)
+        public static JSValue ToJS(object o)
         {
             if (o == null)
             {
@@ -43,13 +44,13 @@ namespace JavascriptForGrasshopper
             {
                 return (string)o;
             }
-            else if (type.IsValueType)
+            else if (type.IsValueType || o is object)
             {
-                return MarshallGeneric(o);
-            }
-            else if (o is object)
-            {
-                return MarshallGeneric(o);
+                Node.EnsureType(type);
+                return (JSValue)typeof(JSMarshaller)
+                    .GetMethod(nameof(JSMarshaller.Current.ToJS))
+                    .MakeGenericMethod(o.GetType())
+                    .Invoke(JSMarshaller.Current, new object[] { o });
             }
             else
             {
@@ -57,11 +58,41 @@ namespace JavascriptForGrasshopper
             }
         }
 
-        private static JSValue MarshallGeneric(object obj)
+        public static object FromJS(JSValue jsVal)
         {
-            MethodInfo method = typeof(JSMarshaller).GetMethod(nameof(JSMarshaller.Current.ToJS));
-            MethodInfo generic = method.MakeGenericMethod(obj.GetType());
-            return (JSValue)generic.Invoke(JSMarshaller.Current, new object[] { obj });
+            if (jsVal.IsNullOrUndefined())
+            {
+                return null;
+            }
+            else if (jsVal.IsArray())
+            {
+                var list = new List<object>();
+                foreach (var itm in jsVal.Items)
+                {
+                    list.Add(FromJS(itm));
+                }
+                return list;
+            }
+            else if (jsVal.IsObject())
+            {
+                if (jsVal.Properties["constructor"] is JSValue ctor && ctor.IsObject())
+                {
+                    Type type = ((JSObject)ctor).Unwrap<Type>();
+                    Node.EnsureType(type);
+                    return typeof(JSMarshaller)
+                        .GetMethod(nameof(JSMarshaller.FromJS))!.MakeGenericMethod(type)
+                        .Invoke(JSMarshaller.Current, new object[] { jsVal });
+                }
+                else
+                {
+                    // Is this a generic javascript object? How should this be returned?
+                    return null;
+                }
+            }
+            else
+            {
+                return jsVal.GetValueExternalOrPrimitive();
+            }
         }
     }
 }

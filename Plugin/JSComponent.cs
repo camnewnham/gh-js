@@ -2,8 +2,10 @@ using Grasshopper;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Parameters;
 using JavascriptForGrasshopper.CodeGenerator;
+using Microsoft.CodeAnalysis;
 using Microsoft.JavaScript.NodeApi;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -232,29 +234,17 @@ namespace JavascriptForGrasshopper
                 {
                     DA.SetData(p, null);
                 }
-                else if (obj.IsArray())
-                {
-                    List<object> result = new List<object>();
-                    for (int i = 0; i < obj.GetArrayLength(); i++)
-                    {
-                        result.Add(obj[i].GetValueExternalOrPrimitive());
-                    }
-                    DA.SetDataList(p, result);
-                }
-                else if (obj.IsExternal())
-                {
-                    DA.SetData(p, obj.GetValueExternal());
-                }
-                else if (obj.IsObject())
-                {
-                    if (obj.RemoveWrap(out object dotnetData))
-                    {
-                        DA.SetData(p, dotnetData);
-                    }
-                }
                 else
                 {
-                    DA.SetData(p, obj.GetValueExternalOrPrimitive());
+                    var val = Converter.FromJS(obj);
+                    if (val is IEnumerable)
+                    {
+                        DA.SetDataList(p, val as IEnumerable);
+                    }
+                    else
+                    {
+                        DA.SetData(p, val);
+                    }
                 }
             }
         }
