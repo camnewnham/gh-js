@@ -68,13 +68,22 @@ namespace JavascriptForGrasshopper
 
         public CodeGenerator.TypeDefinition GetTypeDefinition()
         {
-            string tsType = TypeHint.ToString().ToLower() + (Access == GH_ParamAccess.item ? "" : "[]");
+            string typeName = TypeHint;
+            if (typeName.StartsWith("Rhino"))
+            {
+                typeName = @"InstanceType<typeof dotnet." + typeName + ">";
+            }
+            if (Access == GH_ParamAccess.list)
+            {
+                typeName += "[]";
+            }
+
             return new CodeGenerator.TypeDefinition()
             {
                 VariableName = NickName,
                 Name = PrettyName,
                 Description = ToolTip?.Replace("*/", ""),
-                Type = tsType,
+                Type = typeName,
                 Optional = Optional
             };
         }
@@ -203,7 +212,7 @@ namespace JavascriptForGrasshopper
             AppendAdditionalMenuItems(menu);
 
 
-            if (Kind == GH_ParamKind.input)
+            if (Kind == GH_ParamKind.input || Owner.IsTypescript)
             {
                 Menu_AppendSeparator(menu);
 
@@ -242,28 +251,12 @@ namespace JavascriptForGrasshopper
 
             if (Owner?.IsTypescript ?? false)
             {
-                ToolStripMenuItem typeHintMenu = Menu_AppendItem(menu, "Type Hint");
-
-                foreach (JSTypeHint hint in Enum.GetValues(typeof(JSTypeHint)))
+                Menu_AppendTypeHint(menu, (change) =>
                 {
-                    ToolStripMenuItem item = new ToolStripMenuItem(hint.ToString().ToLower())
-                    {
-                        Tag = hint,
-                        Checked = TypeHint == hint,
-                    };
-                    item.Click += (obj, arg) =>
-                    {
-                        if (TypeHint == hint)
-                        {
-                            return;
-                        }
-
-                        TypeHint = (JSTypeHint)(obj as ToolStripMenuItem).Tag;
-                        typeMetadataChanged = true;
-                        HandleChanges();
-                    };
-                    typeHintMenu.DropDownItems.Add(item);
-                }
+                    TypeHint = change;
+                    typeMetadataChanged = true;
+                    HandleChanges();
+                });
             }
 
             GH_DocumentObject.Menu_AppendSeparator(menu);
@@ -271,6 +264,38 @@ namespace JavascriptForGrasshopper
 
             return true;
         }
+
+        private void Menu_AppendTypeHint(ToolStripDropDown menu, Action<string> onChange)
+        {
+            ToolStripMenuItem typeHintMenu = Menu_AppendItem(menu, "Type Hint");
+
+            Menu_AppendItem(typeHintMenu.DropDown, "any", (obj, arg) => onChange("any"), true, TypeHint == "any");
+            Menu_AppendItem(typeHintMenu.DropDown, "boolean", (obj, arg) => onChange("boolean"), true, TypeHint == "boolean");
+            Menu_AppendItem(typeHintMenu.DropDown, "number", (obj, arg) => onChange("number"), true, TypeHint == "number");
+            Menu_AppendItem(typeHintMenu.DropDown, "string", (obj, arg) => onChange("string"), true, TypeHint == "string");
+            Menu_AppendItem(typeHintMenu.DropDown, "Date", (obj, arg) => onChange("Date"), true, TypeHint == "Date");
+
+
+            void AppendSection(params Type[] types)
+            {
+                Menu_AppendSeparator(typeHintMenu.DropDown);
+
+                foreach (Type type in types)
+                {
+                    Menu_AppendItem(typeHintMenu.DropDown, type.Name, (obj, arg) => onChange(type.FullName), true, TypeHint == type.FullName);
+                }
+            }
+
+            AppendSection(typeof(Rhino.Geometry.Point3d), typeof(Rhino.Geometry.Vector3d), typeof(Rhino.Geometry.Plane), typeof(Rhino.Geometry.Interval));
+            AppendSection(typeof(Rhino.Geometry.Box), typeof(Rhino.Geometry.Transform));
+            AppendSection(typeof(Rhino.Geometry.Line), typeof(Rhino.Geometry.Circle), typeof(Rhino.Geometry.Arc), typeof(Rhino.Geometry.Curve), typeof(Rhino.Geometry.Polyline), typeof(Rhino.Geometry.Rectangle3d));
+            AppendSection(typeof(Rhino.Geometry.Mesh), typeof(Rhino.Geometry.Surface), typeof(Rhino.Geometry.Extrusion),
+#if NET7_0_OR_GREATER
+                typeof(Rhino.Geometry.SubD), 
+#endif
+                typeof(Rhino.Geometry.Brep), typeof(Rhino.Geometry.PointCloud), typeof(Rhino.Geometry.GeometryBase));
+        }
+
 
         protected override void Menu_AppendExtractParameter(ToolStripDropDown menu)
         {
@@ -280,15 +305,7 @@ namespace JavascriptForGrasshopper
         /// <summary>
         /// Provides a type hint for TypeScript
         /// </summary>
-        public JSTypeHint TypeHint { get; private set; } = JSTypeHint.Any;
-
-        public enum JSTypeHint
-        {
-            Any,
-            Number,
-            String,
-            Boolean
-        }
+        public string TypeHint { get; private set; } = "any";
 
         public override bool Write(GH_IWriter writer)
         {
@@ -296,12 +313,14 @@ namespace JavascriptForGrasshopper
             {
                 writer.SetString("pretty_name", m_prettyName);
             }
+            writer.SetString("type_hint", TypeHint);
             return base.Write(writer);
         }
 
         public override bool Read(GH_IReader reader)
         {
             reader.TryGetString("pretty_name", ref m_prettyName);
+            TypeHint = reader.GetString("type_hint");
             return base.Read(reader);
         }
     }

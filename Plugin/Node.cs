@@ -6,9 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace JavascriptForGrasshopper
@@ -135,33 +133,24 @@ namespace JavascriptForGrasshopper
         /// <param name="env"></param>
         private static void LoadDefaultDotNetTypes(NodejsEnvironment env)
         {
-            ManualResetEventSlim mre = new ManualResetEventSlim();
-            env.RunAsync(async () =>
+            env.Run(() =>
             {
-                try
+                JSObject managedTypes = (JSObject)JSValue.CreateObject();
+                JSValue.Global.SetProperty("dotnet", managedTypes);
+                typeof(JSMarshaller)
+                .GetField("s_current", BindingFlags.Static | BindingFlags.NonPublic)
+                .SetValue(null, new JSMarshaller()
                 {
-                    JSObject managedTypes = (JSObject)JSValue.CreateObject();
-                    JSValue.Global.SetProperty("dotnet", managedTypes);
-                    typeof(JSMarshaller)
-                    .GetField("s_current", BindingFlags.Static | BindingFlags.NonPublic)
-                    .SetValue(null, new JSMarshaller()
-                    {
-                        AutoCamelCase = false
-                    });
+                    AutoCamelCase = false
+                });
 
-                    m_exportedTypes = new HashSet<Type>();
-                    m_typeExporter = new TypeExporter(JSMarshaller.Current, managedTypes);
-                    m_typeExporter.ExportAssemblyTypes(typeof(RhinoDoc).Assembly);
-                    m_typeExporter.ExportAssemblyTypes(typeof(Grasshopper.Kernel.GH_Document).Assembly);
-                }
-                finally
-                {
-                    mre.Set();
-                }
+                m_exportedTypes = new HashSet<Type>();
+                m_typeExporter = new TypeExporter(JSMarshaller.Current, managedTypes);
+                m_typeExporter.ExportAssemblyTypes(typeof(RhinoDoc).Assembly);
+                m_typeExporter.ExportAssemblyTypes(typeof(Grasshopper.Kernel.GH_Document).Assembly);
             });
-            mre.Wait();
         }
-        
+
         internal static void EnsureType(Type type)
         {
             if (m_exportedTypes.Add(type))

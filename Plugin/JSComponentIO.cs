@@ -285,8 +285,8 @@ namespace JavascriptForGrasshopper
             {
                 Directory.CreateDirectory(JSSourcePath);
                 Utils.CopyDirectoryRecursive(Path.Combine(TemplatesFolder, IsTypescript ? "ts" : "js"), JSSourcePath);
-                UpdateTypeDefinitions();
                 m_hasExtractedSource = true;
+                UpdateTypeDefinitions();
                 Debug.WriteLine($"Extracted template to {JSSourcePath}");
             }
             WatchForFileChanges();
@@ -311,7 +311,7 @@ namespace JavascriptForGrasshopper
                 return;
             }
 
-            if (!Directory.Exists(JSSourcePath))
+            if (!m_hasExtractedSource)
             {
                 return;
             }
@@ -334,7 +334,10 @@ namespace JavascriptForGrasshopper
 
         private static void EnsureTypesDirectory()
         {
-            if (Directory.Exists(TypesPath)) return;
+            if (Directory.Exists(TypesPath))
+            {
+                return;
+            }
 
             Directory.CreateDirectory(TypesPath);
             Utils.CopyDirectoryRecursive(Path.Combine(TemplatesFolder, "types"), TypesPath);
