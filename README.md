@@ -2,7 +2,7 @@
 
 ## Features
 
-### Javascript
+### JavaScript
 
 Write Javascript with modern syntax. `async` and `await` by default.
 
@@ -17,26 +17,18 @@ export async function runScript(inputs) {
 }
 ```
 
-### Typescript
+### TypeScript
 
 First-class support for TypeScript. You'll get typed variable names and can provide type hints from the parameters in Grasshopper.
 
-![typescript component example](https://github.com/user-attachments/assets/683e0c5a-6ca8-459a-accb-4dcc593fbafa)
+![image](https://github.com/user-attachments/assets/65b7e44c-258d-47e5-a8df-48456f2737ef)
 
-```ts
-export async function runScript(inputs: Component.Inputs): Promise<Component.Outputs> {
-    const sum: number = (inputs.a ?? 0) + (inputs.b ?? 0);
-  return {
-      x: sum
-  };
-}
-```
+### RhinoCommon Support
+The Rhino and Grasshopper namespaces are accessible via the global 'dotnet' object. The current Rhino and Grasshopper documents are provided through the context object.
 
-Use the right click menu to add additional type information which will be used by your linter.
+![image](https://github.com/user-attachments/assets/b7a50cf0-e68c-4e16-9070-ac62a1fa30fa)
 
-![image](https://github.com/user-attachments/assets/feea9e03-40b7-4a4f-a20c-65d2e4f99105)
-
-![image](https://github.com/user-attachments/assets/f9e1b257-7da2-4058-8a68-07d6a4194a99)
+Access to other dotnet types may be made available in future.
 
 ### Hot Reload
 
@@ -76,9 +68,8 @@ The execution environment is NodeJS, meaning you have access to a wide range of 
 
 ### Edit in your IDE
 
-You can edit the component code in any IDE you like. We'll try to launch Visual Studio Code with a clean workspace folder, but otherwise we'll just open the script with whatever your system to defaults to. Hot reload will work either way.
+You can edit the component code in any IDE you like.The plugin will attempt to launch Visual Studio Code with a clean workspace folder, but otherwise we'll just open the script with whatever your system to defaults to. Hot reload will work either way.
 
 ![image](https://github.com/user-attachments/assets/4d70079e-d1ff-4e21-b04a-c5076d3550dc)
 
-
-If you'd like to see "official" support for another, please create an issue.
+If you'd like to see "official" support for another IDE, please create an issue.
