@@ -177,8 +177,10 @@ namespace JavascriptForGrasshopper
             }
             m_isModifiedSinceLastWrite = false;
 
-            Debug.Assert(JSBundleCode != null, "No bundle code to store!");
-            writer.SetString("js_bundle_code", JSBundleCode);
+            if (JSBundleCode != null)
+            {
+                writer.SetString("js_bundle_code", JSBundleCode);
+            }
 
             if (JSSourceZipContents != null)
             {
@@ -198,7 +200,10 @@ namespace JavascriptForGrasshopper
 
         public override bool Read(GH_IReader reader)
         {
-            JSBundleCode = reader.GetString("js_bundle_code");
+            if (reader.ItemExists("js_bundle_code"))
+            {
+                JSBundleCode = reader.GetString("js_bundle_code");
+            }
             if (reader.ItemExists("js_source_zip"))
             {
                 JSSourceZipContents = reader.GetByteArray("js_source_zip");
@@ -253,7 +258,6 @@ namespace JavascriptForGrasshopper
                 string templateBundle = Path.Combine(TemplatesFolder, IsTypescript ? "ts" : "js", "dist", "index.js");
                 Directory.CreateDirectory(Path.GetDirectoryName(JSBundlePath));
                 File.Copy(templateBundle, JSBundlePath);
-                m_isModifiedSinceLastWrite = true;
                 Debug.WriteLine($"Wrote JS template bundle to {JSBundlePath}");
             }
 
