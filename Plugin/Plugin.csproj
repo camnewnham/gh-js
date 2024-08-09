@@ -171,20 +171,18 @@
   </Target>
 
   <!-- Create a javascript template from the typescript template -->
-  <Target Name="CreateJSTemplate" AfterTargets="CopyFilesToOutputDirectory">
+  <Target Name="CreateJSTemplate" AfterTargets="CreateTSBundle">
     <Message Text="Creating Template/js/*" Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Templates/ts" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir ..\js" />
     <ItemGroup>
-      <VSCodeFiles Include="$(OutDir)Templates/ts/.vscode/**" />
+      <TSTemplateFiles Include="$(OutDir)Templates/ts/**/*" />
     </ItemGroup>
-    <Copy SourceFiles="@(VSCodeFiles)" DestinationFolder="$(OutDir)Templates/js/.vscode/%(RecursiveDir)" />
-    <Copy SourceFiles="$(OutDir)Templates/ts/package.json" DestinationFolder="$(OutDir)Templates/js/" />
-  </Target>
-  
-  <!-- Create the initial js bundle from the javascript template code -->
-  <Target Name="CreateJSBundle" AfterTargets="CreateJSTemplate">
-    <Message Text="Creating Templates/ts/dist/index.js" Importance="high" />
-    <Exec WorkingDirectory="$(OutDir)Templates/js" Command="npx -y esbuild index.* --outdir=dist --platform=node --bundle --minify" />
+    <Copy SourceFiles="@(TSTemplateFiles)" DestinationFolder="$(OutDir)Templates/js/%(RecursiveDir)" />
+    <Exec WorkingDirectory="$(OutDir)Templates/js" Command="tsc --module es2022 --target es2022 --moduleResolution node --outdir . --noResolve" />
+    <ItemGroup>
+      <JSTemplateExclude Include="$(OutDir)Templates/js/**/*.ts" />
+      <JSTemplateExclude Remove="$(OutDir)Templates/js/**/*.d.ts" />
+    </ItemGroup>
+    <Delete Files="@(JSTemplateExclude)" />
   </Target>
 
   <!-- Ensure our template directory gets cleaned each build -->

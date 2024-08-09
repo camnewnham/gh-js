@@ -5,7 +5,9 @@
     "strict": true,
     "skipLibCheck": true,
     "moduleResolution": "node",
-    "outDir": "dist"
+    "outDir": "dist",
+    "allowJs": true,
+    "checkJs": true
   },
   "include": [ "**/*.ts", "**/*.d.ts" ],
   "exclude": [ "dist" ]
