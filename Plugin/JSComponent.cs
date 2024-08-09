@@ -1,5 +1,6 @@
 using Grasshopper;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Parameters;
 using JavascriptForGrasshopper.CodeGenerator;
 using Microsoft.CodeAnalysis;
@@ -274,7 +275,11 @@ namespace JavascriptForGrasshopper
                 else
                 {
                     var val = Converter.FromJS(obj);
-                    if (val is IList)
+                    if (val is IGH_DataTree tree)
+                    {
+                        DA.SetDataTree(p, tree);
+                    }
+                    else if (val is IList)
                     {
                         DA.SetDataList(p, val as IEnumerable);
                     }

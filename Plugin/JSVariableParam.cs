@@ -1,12 +1,15 @@
 ﻿using GH_IO.Serialization;
 using Grasshopper;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
 using Microsoft.JavaScript.NodeApi;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace JavascriptForGrasshopper
 {
@@ -77,6 +80,10 @@ namespace JavascriptForGrasshopper
             {
                 typeName += "[]";
             }
+            else if (Access == GH_ParamAccess.tree)
+            {
+                typeName = @"InstanceType<typeof dotnet.Grasshopper.DataTree$1<" + typeName + ">>";
+            }
 
             return new CodeGenerator.TypeDefinition()
             {
@@ -90,38 +97,48 @@ namespace JavascriptForGrasshopper
 
         public bool TryAccessData(IGH_DataAccess DA, int paramIndex, out JSValue value)
         {
-            if (Access == GH_ParamAccess.item)
+            switch (Access)
             {
-                IGH_Goo obj = null;
+                case GH_ParamAccess.item:
+                    IGH_Goo obj = null;
 
-                if (!DA.GetData(paramIndex, ref obj))
-                {
-                    value = default;
-                    return false;
-                }
+                    if (!DA.GetData(paramIndex, ref obj))
+                    {
+                        value = default;
+                        return false;
+                    }
 
-                value = Converter.ToJS(obj.ScriptVariable());
+                    value = Converter.ToJS(obj.ScriptVariable());
+                    return true;
+                case GH_ParamAccess.list:
+                    value = JSValue.CreateArray();
+                    List<IGH_Goo> goos = new List<IGH_Goo>();
+                    if (!DA.GetDataList(paramIndex, goos))
+                    {
+                        return false;
+                    }
+                    foreach (IGH_Goo itm in goos)
+                    {
+                        value.Items.Add(Converter.ToJS(itm.ScriptVariable()));
+                    }
+                    return true;
+                case GH_ParamAccess.tree:
+                    if (!DA.GetDataTree(paramIndex, out GH_Structure<IGH_Goo> structure))
+                    {
+                        value = default;
+                        return false;
+                    }
+                    var dt = new DataTree<object>();
+                    foreach (var p in structure.Paths)
+                    {
+                        dt.EnsurePath(p);
+                        dt.AddRange((structure.get_Branch(p) as IEnumerable<IGH_Goo>).Select(x => x.ScriptVariable()), p);
+                    }
+                    value = Converter.ToJS(dt);
+                    return true;
+                default:
+                    throw new NotSupportedException("Unsupported param access type: " + Access);
             }
-            else if (Access == GH_ParamAccess.list)
-            {
-                value = JSValue.CreateArray();
-                List<IGH_Goo> goos = new List<IGH_Goo>();
-                if (!DA.GetDataList(paramIndex, goos))
-                {
-                    return false;
-                }
-                foreach (IGH_Goo itm in goos)
-                {
-                    value.Items.Add(Converter.ToJS(itm.ScriptVariable()));
-                }
-            }
-            else
-            {
-                // TODO: Should we support tree access via nested arrays?
-                throw new InvalidOperationException("Unable to process tree structure for script input.");
-            }
-
-            return true;
         }
 
         private static ToolStripTextBox Menu_AppendTextField(ToolStripDropDown menu, string text, Action<string> textChanged, bool closeParentOnEnter = true)
@@ -216,27 +233,21 @@ namespace JavascriptForGrasshopper
             {
                 Menu_AppendSeparator(menu);
 
-                Menu_AppendItem(menu, "Item Access", (obj, arg) =>
+                foreach (var accessType in Enum.GetValues(typeof(GH_ParamAccess)).Cast<GH_ParamAccess>())
                 {
-                    if (Access == GH_ParamAccess.item)
+                    string name = accessType.ToString();
+                    name = Char.ToUpperInvariant(name[0]) + name.Substring(1) + " Access";
+                    Menu_AppendItem(menu, name, (obj, arg) =>
                     {
-                        Access = GH_ParamAccess.item;
-                        typeMetadataChanged = true;
-                        compilationDataChanged = true;
-                        HandleChanges();
-                    }
-                }, true, Access == GH_ParamAccess.item);
-
-                Menu_AppendItem(menu, "List Access", (obj, arg) =>
-                {
-                    if (Access != GH_ParamAccess.list)
-                    {
-                        Access = GH_ParamAccess.list;
-                        typeMetadataChanged = true;
-                        compilationDataChanged = true;
-                        HandleChanges();
-                    }
-                }, true, Access == GH_ParamAccess.list);
+                        if (Access != accessType)
+                        {
+                            Access = accessType;
+                            typeMetadataChanged = true;
+                            compilationDataChanged = true;
+                            HandleChanges();
+                        }
+                    }, true, Access == accessType);
+                }
             }
 
             Menu_AppendSeparator(menu);
