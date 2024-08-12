@@ -19,7 +19,7 @@ export async function runScript(inputs) {
 
 ### TypeScript
 
-First-class support for TypeScript. You'll get typed variable names and can provide type hints from the parameters in Grasshopper.
+First-class support for TypeScript. Variables are fully typed, and type hints can be provided from from the parameters in Grasshopper.
 
 ![image](https://github.com/user-attachments/assets/65b7e44c-258d-47e5-a8df-48456f2737ef)
 
@@ -50,7 +50,7 @@ Hit breakpoints, catch exceptions and step through your code by attaching a debu
 
 ### Bundling
 
-Your runtime code is automatically bundled, minified and stored in the Grasshopper component. This means that you can `npm install` to your hearts content.
+Editor code is automatically bundled for runtime execution, minified and stored in the Grasshopper component. This means most js/node modules are supported via `npm install`.
 
 ![image](https://github.com/user-attachments/assets/88250f92-2283-4744-ae7d-fa38d31325c0)
 
@@ -68,7 +68,7 @@ The execution environment is NodeJS, meaning you have access to a wide range of 
 
 ### Edit in your IDE
 
-You can edit the component code in any IDE you like.The plugin will attempt to launch Visual Studio Code with a clean workspace folder, but otherwise we'll just open the script with whatever your system to defaults to. Hot reload will work either way.
+Component code can be edited in any IDE. This plugin will attempt to launch Visual Studio Code primarily, but otherwise the the index file will just open the script with the system default. Hot reload will work either way.
 
 ![image](https://github.com/user-attachments/assets/4d70079e-d1ff-4e21-b04a-c5076d3550dc)
 
