@@ -47,10 +47,7 @@ namespace JavascriptForGrasshopper
             else if (type.IsValueType || o is object)
             {
                 Node.EnsureType(type);
-                return (JSValue)typeof(JSMarshaller)
-                    .GetMethod(nameof(JSMarshaller.Current.ToJS))
-                    .MakeGenericMethod(o.GetType())
-                    .Invoke(JSMarshaller.Current, new object[] { o });
+                return JSMarshaller.Current.ToJS(type, o);
             }
             else
             {
@@ -79,9 +76,7 @@ namespace JavascriptForGrasshopper
                 {
                     Type type = ((JSObject)ctor).Unwrap<Type>();
                     Node.EnsureType(type);
-                    return typeof(JSMarshaller)
-                        .GetMethod(nameof(JSMarshaller.FromJS))!.MakeGenericMethod(type)
-                        .Invoke(JSMarshaller.Current, new object[] { jsVal });
+                    return JSMarshaller.Current.FromJS(type, jsVal);
                 }
                 else
                 {

@@ -173,14 +173,15 @@ namespace JavascriptForGrasshopper
                     {
                         JSValue runScript = await Node.Environment.ImportAsync(JSBundlePath, "runScript", true);
                         Debug.Assert(runScript.IsFunction(), "runScript was not a function");
-                        JSValue inputs = GetInputParameters(DA);
-                        JSValue result = runScript.Call(thisArg: default, inputs, m_contextObj.GetValue());
 
                         if (!runScript.IsFunction())
                         {
                             AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Unable to find runScript method.");
                             return;
                         };
+
+                        JSValue inputs = GetInputParameters(DA);
+                        JSValue result = runScript.Call(thisArg: default, inputs, m_contextObj.GetValue());
 
                         if (result.IsPromise())
                         {
