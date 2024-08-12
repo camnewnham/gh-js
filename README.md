@@ -68,7 +68,9 @@ The execution environment is NodeJS, meaning you have access to a wide range of 
 
 ### Edit in your IDE
 
-Component code can be edited in any IDE. This plugin will attempt to launch Visual Studio Code primarily, but otherwise the the index file will just open the script with the system default. Hot reload will work either way.
+Component code can be edited in any IDE. This plugin will attempt to launch Visual Studio Code primarily, but otherwise the the index file will just open the script with the system default. 
+
+No need to run scripts (or even have node installed) - automatic bundling and hot reload will work either way.
 
 ![image](https://github.com/user-attachments/assets/4d70079e-d1ff-4e21-b04a-c5076d3550dc)
 
